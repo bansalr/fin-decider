@@ -1,0 +1,1318 @@
+{
+  "ontology": {
+    "id": "gsib_basel_markets_lending",
+    "version": "1.0.0",
+    "title": "Basel-derived G-SIB Markets and Lending Activity Ontology",
+    "description": "Hierarchical multi-label ontology for financial-news classification by materially described G-SIB business activity.",
+    "semantics": {
+      "target": "material_gsib_business_activity",
+      "multi_label": true,
+      "generic_market_context_is_not_activity": true
+    },
+    "roots": [
+      "relevance"
+    ]
+  },
+  "nodes": {
+    "relevance": {
+      "name": "Relevance",
+      "type": "multi_label",
+      "question": "Which relevance categories apply to this article?",
+      "definition": "Routes articles between material G-SIB activity, financial-market context without such activity, and out-of-scope content.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "relevance.gsib_activity",
+        "relevance.market_context_only",
+        "relevance.neither"
+      ]
+    },
+    "relevance.gsib_activity": {
+      "name": "G-SIB Activity",
+      "type": "multi_label",
+      "parent": "relevance",
+      "question": "Which G-SIB business arms are materially implicated by the article?",
+      "definition": "Material Markets, Lending, or Treasury/ALM activity performed by a large universal bank.",
+      "includes": [
+        "bank lending",
+        "market making",
+        "trading",
+        "securities financing",
+        "derivatives",
+        "underwriting",
+        "syndication",
+        "balance-sheet management"
+      ],
+      "excludes": [
+        "asset-price movement without banking activity",
+        "issuer news without banking activity"
+      ],
+      "synonyms": [
+        "banking activity",
+        "dealer activity"
+      ],
+      "children": [
+        "business.markets",
+        "business.lending",
+        "business.treasury_alm"
+      ]
+    },
+    "relevance.market_context_only": {
+      "name": "Market Context Only",
+      "type": "leaf",
+      "parent": "relevance",
+      "definition": "Financial-market, issuer, macroeconomic, policy, or asset-price context without a material G-SIB activity.",
+      "includes": [
+        "asset-price movement",
+        "macroeconomic release",
+        "central-bank policy",
+        "issuer earnings"
+      ],
+      "excludes": [
+        "bank financing",
+        "dealer trading",
+        "underwriting",
+        "derivatives transaction",
+        "securities financing"
+      ],
+      "synonyms": []
+    },
+    "relevance.neither": {
+      "name": "Neither / Out of Scope",
+      "type": "leaf",
+      "parent": "relevance",
+      "definition": "Content neither materially about G-SIB business activity nor relevant financial-market context.",
+      "includes": [
+        "unrelated general news"
+      ],
+      "excludes": [
+        "banking activity",
+        "financial-market context"
+      ],
+      "synonyms": [
+        "out of scope"
+      ]
+    },
+    "business.markets": {
+      "name": "Markets",
+      "type": "multi_label",
+      "parent": "relevance.gsib_activity",
+      "question": "Which Markets business families are materially described or implicated?",
+      "definition": "Client-facing trading, market making, securities and derivatives activity, securities financing, structured products, underwriting, and syndication.",
+      "includes": [
+        "market making",
+        "trading",
+        "securities financing",
+        "derivatives",
+        "underwriting",
+        "syndication"
+      ],
+      "excludes": [
+        "ordinary corporate lending",
+        "consumer lending",
+        "residential mortgage origination"
+      ],
+      "synonyms": [
+        "global markets",
+        "sales and trading"
+      ],
+      "children": [
+        "markets.macro",
+        "markets.credit",
+        "markets.equities",
+        "markets.securitised",
+        "markets.financing",
+        "markets.derivatives_xva",
+        "markets.underwriting"
+      ]
+    },
+    "business.lending": {
+      "name": "Lending",
+      "type": "multi_label",
+      "parent": "relevance.gsib_activity",
+      "question": "Which Lending business families are materially described or implicated?",
+      "definition": "Provision, commitment, arrangement, or management of loans and credit facilities.",
+      "includes": [
+        "loans",
+        "revolving credit",
+        "term lending",
+        "acquisition finance",
+        "specialised lending",
+        "trade finance",
+        "mortgages",
+        "consumer credit"
+      ],
+      "excludes": [
+        "securities trading without lending",
+        "repo and securities lending"
+      ],
+      "synonyms": [
+        "bank lending",
+        "credit"
+      ],
+      "children": [
+        "lending.corporate",
+        "lending.leveraged_sponsor",
+        "lending.specialised",
+        "lending.cre",
+        "lending.financial_institutions",
+        "lending.sovereign_public",
+        "lending.trade_working_capital",
+        "lending.consumer",
+        "lending.residential_mortgage"
+      ]
+    },
+    "business.treasury_alm": {
+      "name": "Treasury / ALM",
+      "type": "multi_label",
+      "parent": "relevance.gsib_activity",
+      "question": "Which Treasury or asset-liability-management activities are materially described?",
+      "definition": "Bank balance-sheet funding, liquidity management, structural interest-rate risk, and structural FX.",
+      "includes": [
+        "bank funding",
+        "liquidity buffer",
+        "structural rates",
+        "structural FX"
+      ],
+      "excludes": [
+        "client-facing rates trading",
+        "client-facing FX trading"
+      ],
+      "synonyms": [
+        "ALM",
+        "bank treasury"
+      ],
+      "children": [
+        "treasury.funding",
+        "treasury.liquidity",
+        "treasury.structural_rates",
+        "treasury.structural_fx"
+      ]
+    },
+    "treasury.funding": {
+      "name": "Treasury Funding",
+      "type": "leaf",
+      "parent": "business.treasury_alm",
+      "definition": "Bank-level wholesale or secured funding undertaken for balance-sheet funding.",
+      "includes": [
+        "wholesale funding",
+        "secured funding"
+      ],
+      "excludes": [
+        "client repo financing"
+      ],
+      "synonyms": []
+    },
+    "treasury.liquidity": {
+      "name": "Liquidity Management",
+      "type": "leaf",
+      "parent": "business.treasury_alm",
+      "definition": "Management of bank liquidity resources, liquidity buffer, and liquid-asset portfolio.",
+      "includes": [
+        "HQLA",
+        "liquidity buffer"
+      ],
+      "excludes": [
+        "client securities trading"
+      ],
+      "synonyms": []
+    },
+    "treasury.structural_rates": {
+      "name": "Structural Interest-Rate Risk",
+      "type": "leaf",
+      "parent": "business.treasury_alm",
+      "definition": "Management of structural interest-rate exposure arising from the banking book.",
+      "includes": [
+        "IRRBB",
+        "structural rates hedging"
+      ],
+      "excludes": [
+        "client rates trading"
+      ],
+      "synonyms": [
+        "IRRBB"
+      ]
+    },
+    "treasury.structural_fx": {
+      "name": "Structural FX",
+      "type": "leaf",
+      "parent": "business.treasury_alm",
+      "definition": "Management or hedging of structural foreign-exchange exposure arising from the bank balance sheet.",
+      "includes": [
+        "structural FX hedging"
+      ],
+      "excludes": [
+        "client FX trading"
+      ],
+      "synonyms": []
+    },
+    "markets.macro": {
+      "name": "Macro Markets",
+      "type": "multi_label",
+      "parent": "business.markets",
+      "question": "Which Macro Markets activities are materially described?",
+      "definition": "Client-facing trading or market making in rates, FX, commodities, inflation, or emerging-markets macro products.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "markets.macro.rates",
+        "markets.macro.fx",
+        "markets.macro.commodities",
+        "markets.macro.inflation",
+        "markets.macro.emerging_markets"
+      ]
+    },
+    "markets.macro.rates": {
+      "name": "Rates",
+      "type": "leaf",
+      "parent": "markets.macro",
+      "definition": "Trading or market making in government bonds, interest-rate swaps, swaptions, futures, options, or related rates products.",
+      "includes": [
+        "government bonds",
+        "interest-rate swaps",
+        "swaptions",
+        "rates futures"
+      ],
+      "excludes": [
+        "corporate credit",
+        "structural IRRBB"
+      ],
+      "synonyms": [
+        "interest rates"
+      ]
+    },
+    "markets.macro.fx": {
+      "name": "Foreign Exchange",
+      "type": "leaf",
+      "parent": "markets.macro",
+      "definition": "Client-facing trading or market making in spot FX, forwards, FX swaps, options, or related currency products.",
+      "includes": [
+        "spot FX",
+        "FX forwards",
+        "FX swaps",
+        "currency options"
+      ],
+      "excludes": [
+        "structural FX"
+      ],
+      "synonyms": [
+        "FX",
+        "currencies"
+      ]
+    },
+    "markets.macro.commodities": {
+      "name": "Commodities",
+      "type": "leaf",
+      "parent": "markets.macro",
+      "definition": "Trading, market making, or derivatives activity in energy, metals, agricultural, or other commodities.",
+      "includes": [
+        "commodity futures",
+        "commodity swaps",
+        "energy trading",
+        "metals trading"
+      ],
+      "excludes": [
+        "commodity finance lending"
+      ],
+      "synonyms": [
+        "commodity trading"
+      ]
+    },
+    "markets.macro.inflation": {
+      "name": "Inflation",
+      "type": "leaf",
+      "parent": "markets.macro",
+      "definition": "Trading or market making in inflation-linked securities, inflation swaps, or inflation options.",
+      "includes": [
+        "inflation swaps",
+        "linkers"
+      ],
+      "excludes": [
+        "generic inflation news"
+      ],
+      "synonyms": [
+        "inflation trading"
+      ]
+    },
+    "markets.macro.emerging_markets": {
+      "name": "Emerging Markets Macro",
+      "type": "leaf",
+      "parent": "markets.macro",
+      "definition": "Trading in emerging-market sovereign rates, local rates, currencies, or related macro instruments.",
+      "includes": [
+        "EM FX",
+        "EM rates",
+        "local-currency sovereign bonds"
+      ],
+      "excludes": [
+        "EM corporate lending"
+      ],
+      "synonyms": [
+        "EM macro"
+      ]
+    },
+    "markets.credit": {
+      "name": "Credit Markets",
+      "type": "multi_label",
+      "parent": "business.markets",
+      "question": "Which Credit Markets activities are materially described?",
+      "definition": "Trading, market making, or derivatives activity in corporate or structured credit.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "markets.credit.investment_grade",
+        "markets.credit.high_yield_distressed",
+        "markets.credit.credit_derivatives",
+        "markets.credit.structured_credit"
+      ]
+    },
+    "markets.credit.investment_grade": {
+      "name": "Investment Grade Credit",
+      "type": "leaf",
+      "parent": "markets.credit",
+      "definition": "Trading or market making in investment-grade corporate credit.",
+      "includes": [
+        "investment-grade bonds",
+        "IG credit"
+      ],
+      "excludes": [
+        "high-yield credit",
+        "corporate lending"
+      ],
+      "synonyms": [
+        "IG credit"
+      ]
+    },
+    "markets.credit.high_yield_distressed": {
+      "name": "High Yield / Distressed Credit",
+      "type": "leaf",
+      "parent": "markets.credit",
+      "definition": "Trading or market making in high-yield, defaulted, or distressed credit.",
+      "includes": [
+        "high-yield bonds",
+        "distressed debt"
+      ],
+      "excludes": [
+        "leveraged loan origination"
+      ],
+      "synonyms": [
+        "HY credit"
+      ]
+    },
+    "markets.credit.credit_derivatives": {
+      "name": "Credit Derivatives",
+      "type": "leaf",
+      "parent": "markets.credit",
+      "definition": "Trading or structuring CDS, credit indices, tranches, or related derivatives.",
+      "includes": [
+        "CDS",
+        "CDX",
+        "iTraxx",
+        "credit index"
+      ],
+      "excludes": [
+        "cash corporate bonds"
+      ],
+      "synonyms": [
+        "CDS trading"
+      ]
+    },
+    "markets.credit.structured_credit": {
+      "name": "Structured Credit",
+      "type": "leaf",
+      "parent": "markets.credit",
+      "definition": "Trading or structuring tranched or bespoke credit-risk products.",
+      "includes": [
+        "bespoke tranches",
+        "synthetic CDO",
+        "correlation products"
+      ],
+      "excludes": [
+        "plain corporate bonds"
+      ],
+      "synonyms": [
+        "correlation trading"
+      ]
+    },
+    "markets.equities": {
+      "name": "Equities",
+      "type": "multi_label",
+      "parent": "business.markets",
+      "question": "Which Equities activities are materially described?",
+      "definition": "Client-facing equity trading, market making, derivatives, or structured-product activity.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "markets.equities.cash",
+        "markets.equities.derivatives",
+        "markets.equities.structured"
+      ]
+    },
+    "markets.equities.cash": {
+      "name": "Cash Equities",
+      "type": "leaf",
+      "parent": "markets.equities",
+      "definition": "Client-facing execution, trading, or market making in cash equities.",
+      "includes": [
+        "cash equities",
+        "equity execution"
+      ],
+      "excludes": [
+        "generic share-price movement",
+        "equity underwriting"
+      ],
+      "synonyms": []
+    },
+    "markets.equities.derivatives": {
+      "name": "Equity Derivatives",
+      "type": "leaf",
+      "parent": "markets.equities",
+      "definition": "Trading or structuring equity options, futures, swaps, or index derivatives.",
+      "includes": [
+        "equity options",
+        "equity swaps",
+        "index options"
+      ],
+      "excludes": [
+        "cash equity execution"
+      ],
+      "synonyms": []
+    },
+    "markets.equities.structured": {
+      "name": "Structured Equity",
+      "type": "leaf",
+      "parent": "markets.equities",
+      "definition": "Structuring or distribution of equity-linked structured products.",
+      "includes": [
+        "equity-linked notes",
+        "structured equity products"
+      ],
+      "excludes": [
+        "plain equity options",
+        "equity underwriting"
+      ],
+      "synonyms": []
+    },
+    "markets.securitised": {
+      "name": "Securitised Products",
+      "type": "multi_label",
+      "parent": "business.markets",
+      "question": "Which securitised-products activities are materially described?",
+      "definition": "Trading, structuring, warehousing, or distribution of asset-backed and mortgage-backed products.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "markets.securitised.rmbs",
+        "markets.securitised.cmbs",
+        "markets.securitised.abs",
+        "markets.securitised.clo_cdo"
+      ]
+    },
+    "markets.securitised.rmbs": {
+      "name": "RMBS",
+      "type": "leaf",
+      "parent": "markets.securitised",
+      "definition": "Residential mortgage-backed securities activity.",
+      "includes": [
+        "RMBS",
+        "residential MBS"
+      ],
+      "excludes": [
+        "residential mortgage origination"
+      ],
+      "synonyms": []
+    },
+    "markets.securitised.cmbs": {
+      "name": "CMBS",
+      "type": "leaf",
+      "parent": "markets.securitised",
+      "definition": "Commercial mortgage-backed securities activity.",
+      "includes": [
+        "CMBS"
+      ],
+      "excludes": [
+        "direct CRE lending"
+      ],
+      "synonyms": []
+    },
+    "markets.securitised.abs": {
+      "name": "ABS",
+      "type": "leaf",
+      "parent": "markets.securitised",
+      "definition": "Asset-backed securities activity other than RMBS/CMBS.",
+      "includes": [
+        "ABS",
+        "auto ABS",
+        "credit-card ABS"
+      ],
+      "excludes": [
+        "direct consumer lending"
+      ],
+      "synonyms": []
+    },
+    "markets.securitised.clo_cdo": {
+      "name": "CLO / CDO",
+      "type": "leaf",
+      "parent": "markets.securitised",
+      "definition": "Collateralised loan or debt obligation activity.",
+      "includes": [
+        "CLO",
+        "CDO"
+      ],
+      "excludes": [
+        "direct leveraged lending"
+      ],
+      "synonyms": []
+    },
+    "markets.financing": {
+      "name": "Markets Financing",
+      "type": "multi_label",
+      "parent": "business.markets",
+      "question": "Which client securities-financing or prime-finance activities are materially described?",
+      "definition": "Client financing through securities finance, prime brokerage, margin, or synthetic structures.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "markets.financing.repo",
+        "markets.financing.securities_lending",
+        "markets.financing.prime",
+        "markets.financing.margin",
+        "markets.financing.synthetic"
+      ]
+    },
+    "markets.financing.repo": {
+      "name": "Repo / Reverse Repo",
+      "type": "leaf",
+      "parent": "markets.financing",
+      "definition": "Client securities financing through sale/repurchase or purchase/resale of securities against cash.",
+      "includes": [
+        "repo",
+        "reverse repo",
+        "repurchase agreement"
+      ],
+      "excludes": [
+        "central-bank repo-rate policy without dealer financing",
+        "bank treasury funding"
+      ],
+      "synonyms": [
+        "repurchase agreements"
+      ]
+    },
+    "markets.financing.securities_lending": {
+      "name": "Securities Lending",
+      "type": "leaf",
+      "parent": "markets.financing",
+      "definition": "Client lending or borrowing of securities against collateral.",
+      "includes": [
+        "stock borrow",
+        "securities lending"
+      ],
+      "excludes": [
+        "ordinary secured loans"
+      ],
+      "synonyms": [
+        "stock lending"
+      ]
+    },
+    "markets.financing.prime": {
+      "name": "Prime Brokerage Financing",
+      "type": "leaf",
+      "parent": "markets.financing",
+      "definition": "Financing and related balance-sheet services to hedge funds or institutional clients through prime brokerage.",
+      "includes": [
+        "prime brokerage financing",
+        "hedge-fund financing"
+      ],
+      "excludes": [
+        "generic hedge-fund news",
+        "fund subscription lending"
+      ],
+      "synonyms": [
+        "prime finance"
+      ]
+    },
+    "markets.financing.margin": {
+      "name": "Margin Lending",
+      "type": "leaf",
+      "parent": "markets.financing",
+      "definition": "Credit against securities or trading positions to finance client margin or investment positions.",
+      "includes": [
+        "margin loans",
+        "margin lending"
+      ],
+      "excludes": [
+        "consumer unsecured lending"
+      ],
+      "synonyms": [
+        "margin finance"
+      ]
+    },
+    "markets.financing.synthetic": {
+      "name": "Synthetic Financing",
+      "type": "leaf",
+      "parent": "markets.financing",
+      "definition": "Financing exposure delivered synthetically through derivatives such as total-return swaps.",
+      "includes": [
+        "TRS financing",
+        "synthetic prime financing"
+      ],
+      "excludes": [
+        "derivatives with no financing purpose"
+      ],
+      "synonyms": [
+        "synthetic prime finance"
+      ]
+    },
+    "markets.derivatives_xva": {
+      "name": "Derivatives / XVA",
+      "type": "multi_label",
+      "parent": "business.markets",
+      "question": "Which derivatives, clearing, or valuation-adjustment activities are materially described?",
+      "definition": "Cross-asset OTC or cleared derivatives, client clearing, or XVA/CVA activity.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "markets.derivatives.otc",
+        "markets.derivatives.cleared",
+        "markets.derivatives.client_clearing",
+        "markets.derivatives.xva"
+      ]
+    },
+    "markets.derivatives.otc": {
+      "name": "OTC Derivatives",
+      "type": "leaf",
+      "parent": "markets.derivatives_xva",
+      "definition": "Bilateral OTC derivative activity not better classified solely by asset class.",
+      "includes": [
+        "OTC swaps",
+        "bilateral derivatives"
+      ],
+      "excludes": [
+        "exchange-traded futures"
+      ],
+      "synonyms": []
+    },
+    "markets.derivatives.cleared": {
+      "name": "Cleared Derivatives",
+      "type": "leaf",
+      "parent": "markets.derivatives_xva",
+      "definition": "Derivative activity centrally cleared through a CCP.",
+      "includes": [
+        "cleared swaps",
+        "centrally cleared derivatives"
+      ],
+      "excludes": [
+        "bilateral OTC derivatives"
+      ],
+      "synonyms": []
+    },
+    "markets.derivatives.client_clearing": {
+      "name": "Client Clearing",
+      "type": "leaf",
+      "parent": "markets.derivatives_xva",
+      "definition": "Provision of clearing access or clearing services to clients.",
+      "includes": [
+        "client clearing",
+        "futures clearing"
+      ],
+      "excludes": [
+        "proprietary clearing with no client service"
+      ],
+      "synonyms": []
+    },
+    "markets.derivatives.xva": {
+      "name": "CVA / XVA",
+      "type": "leaf",
+      "parent": "markets.derivatives_xva",
+      "definition": "Management, pricing, hedging, or trading of derivative valuation adjustments.",
+      "includes": [
+        "CVA",
+        "XVA",
+        "FVA"
+      ],
+      "excludes": [
+        "generic derivatives with no XVA activity"
+      ],
+      "synonyms": []
+    },
+    "markets.underwriting": {
+      "name": "Underwriting / Syndication",
+      "type": "multi_label",
+      "parent": "business.markets",
+      "question": "Which underwriting or syndication activities are materially described?",
+      "definition": "Origination for distribution, underwriting, syndication, bookrunning, or placement of debt, equity, or syndicated loans.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "markets.underwriting.dcm",
+        "markets.underwriting.ecm",
+        "markets.underwriting.loan_syndication"
+      ]
+    },
+    "markets.underwriting.dcm": {
+      "name": "Debt Capital Markets Underwriting",
+      "type": "leaf",
+      "parent": "markets.underwriting",
+      "definition": "Underwriting, bookrunning, structuring, or placement of bonds and debt issuance.",
+      "includes": [
+        "bond underwriting",
+        "DCM",
+        "bookrunner"
+      ],
+      "excludes": [
+        "secondary bond trading",
+        "bilateral lending"
+      ],
+      "synonyms": []
+    },
+    "markets.underwriting.ecm": {
+      "name": "Equity Capital Markets Underwriting",
+      "type": "leaf",
+      "parent": "markets.underwriting",
+      "definition": "Underwriting, bookrunning, structuring, or placement of equity or equity-linked issuance.",
+      "includes": [
+        "IPO underwriting",
+        "follow-on offering",
+        "ECM"
+      ],
+      "excludes": [
+        "cash equity trading"
+      ],
+      "synonyms": []
+    },
+    "markets.underwriting.loan_syndication": {
+      "name": "Loan Syndication",
+      "type": "leaf",
+      "parent": "markets.underwriting",
+      "definition": "Arrangement, syndication, distribution, or bookrunning of loans among lenders or investors.",
+      "includes": [
+        "syndicated loan",
+        "loan syndication",
+        "arranger"
+      ],
+      "excludes": [
+        "bilateral retained loan"
+      ],
+      "synonyms": []
+    },
+    "lending.corporate": {
+      "name": "Corporate Lending",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which general corporate-lending activities are materially described?",
+      "definition": "General corporate loans and facilities not better classified elsewhere.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.corporate.large",
+        "lending.corporate.middle_market",
+        "lending.corporate.sme"
+      ]
+    },
+    "lending.corporate.large": {
+      "name": "Large Corporate Lending",
+      "type": "leaf",
+      "parent": "lending.corporate",
+      "definition": "General lending and facilities to large corporate borrowers.",
+      "includes": [
+        "large corporate revolver",
+        "investment-grade corporate loan"
+      ],
+      "excludes": [
+        "leveraged finance",
+        "project finance"
+      ],
+      "synonyms": []
+    },
+    "lending.corporate.middle_market": {
+      "name": "Middle Market Lending",
+      "type": "leaf",
+      "parent": "lending.corporate",
+      "definition": "General lending to middle-market corporate borrowers.",
+      "includes": [
+        "middle-market loans"
+      ],
+      "excludes": [
+        "consumer lending"
+      ],
+      "synonyms": []
+    },
+    "lending.corporate.sme": {
+      "name": "SME Corporate Lending",
+      "type": "leaf",
+      "parent": "lending.corporate",
+      "definition": "Corporate/commercial lending to small and medium-sized enterprises.",
+      "includes": [
+        "SME loan",
+        "small-business corporate credit"
+      ],
+      "excludes": [
+        "consumer personal lending"
+      ],
+      "synonyms": []
+    },
+    "lending.leveraged_sponsor": {
+      "name": "Leveraged / Sponsor Finance",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which leveraged or sponsor-finance activities are materially described?",
+      "definition": "Leveraged lending, sponsor-backed credit, acquisition finance, or bridge finance.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.leveraged_sponsor.leveraged_loan",
+        "lending.leveraged_sponsor.acquisition",
+        "lending.leveraged_sponsor.bridge"
+      ]
+    },
+    "lending.leveraged_sponsor.leveraged_loan": {
+      "name": "Leveraged Loan",
+      "type": "leaf",
+      "parent": "lending.leveraged_sponsor",
+      "definition": "Leveraged lending to highly indebted or below-investment-grade borrowers.",
+      "includes": [
+        "leveraged loan",
+        "TLB",
+        "term loan B"
+      ],
+      "excludes": [
+        "high-yield bond trading"
+      ],
+      "synonyms": []
+    },
+    "lending.leveraged_sponsor.acquisition": {
+      "name": "Acquisition Finance",
+      "type": "leaf",
+      "parent": "lending.leveraged_sponsor",
+      "definition": "Debt financing used to fund an acquisition, merger, or sponsor-backed buyout.",
+      "includes": [
+        "acquisition loan",
+        "M&A financing",
+        "LBO financing"
+      ],
+      "excludes": [
+        "general corporate loan unrelated to acquisition"
+      ],
+      "synonyms": []
+    },
+    "lending.leveraged_sponsor.bridge": {
+      "name": "Bridge Finance",
+      "type": "leaf",
+      "parent": "lending.leveraged_sponsor",
+      "definition": "Committed financing intended to bridge a transaction until permanent financing is raised.",
+      "includes": [
+        "bridge loan",
+        "bridge facility",
+        "bridge-to-bond"
+      ],
+      "excludes": [
+        "ordinary revolving credit"
+      ],
+      "synonyms": []
+    },
+    "lending.specialised": {
+      "name": "Specialised Lending",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which specialised-lending categories are materially described?",
+      "definition": "Asset-, project-, or transaction-specific lending whose repayment is closely tied to the financed project, object, or commodity.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.specialised.project_finance",
+        "lending.specialised.object_finance",
+        "lending.specialised.commodity_finance"
+      ]
+    },
+    "lending.specialised.project_finance": {
+      "name": "Project Finance",
+      "type": "leaf",
+      "parent": "lending.specialised",
+      "definition": "Financing for a specific project where repayment depends primarily on project revenues, commonly through a project SPV with non- or limited recourse.",
+      "includes": [
+        "infrastructure finance",
+        "power project finance",
+        "project SPV",
+        "non-recourse project debt"
+      ],
+      "excludes": [
+        "general corporate borrowing by infrastructure company"
+      ],
+      "synonyms": [],
+      "basel": {
+        "exposure_class": "specialised_lending",
+        "code": "PF"
+      }
+    },
+    "lending.specialised.object_finance": {
+      "name": "Object Finance",
+      "type": "leaf",
+      "parent": "lending.specialised",
+      "definition": "Financing of a specific physical asset where repayment depends substantially on asset cash flows or value.",
+      "includes": [
+        "aircraft finance",
+        "ship finance",
+        "railcar finance",
+        "equipment finance"
+      ],
+      "excludes": [
+        "aircraft orders without financing",
+        "general airline corporate loan"
+      ],
+      "synonyms": [],
+      "basel": {
+        "exposure_class": "specialised_lending",
+        "code": "OF"
+      }
+    },
+    "lending.specialised.commodity_finance": {
+      "name": "Commodity Finance",
+      "type": "leaf",
+      "parent": "lending.specialised",
+      "definition": "Structured financing of commodity reserves, inventories, production, or transactions where repayment is closely linked to commodity cash flows.",
+      "includes": [
+        "reserve-based lending",
+        "commodity inventory finance",
+        "structured commodity finance"
+      ],
+      "excludes": [
+        "commodity derivatives trading",
+        "generic working-capital loan"
+      ],
+      "synonyms": [],
+      "basel": {
+        "exposure_class": "specialised_lending",
+        "code": "CF"
+      }
+    },
+    "lending.cre": {
+      "name": "Commercial Real Estate Lending",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which commercial-real-estate lending categories are materially described?",
+      "definition": "Credit exposures financing commercial real estate, income-producing property, or higher-risk development/construction.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.cre.general",
+        "lending.cre.ipre",
+        "lending.cre.hvcre"
+      ]
+    },
+    "lending.cre.general": {
+      "name": "General Commercial Real Estate Lending",
+      "type": "leaf",
+      "parent": "lending.cre",
+      "definition": "CRE lending not specifically classified as IPRE or HVCRE.",
+      "includes": [
+        "commercial mortgage",
+        "CRE loan"
+      ],
+      "excludes": [
+        "CMBS",
+        "residential mortgage"
+      ],
+      "synonyms": []
+    },
+    "lending.cre.ipre": {
+      "name": "Income-Producing Real Estate",
+      "type": "leaf",
+      "parent": "lending.cre",
+      "definition": "Real-estate lending where repayment materially depends on cash flows generated by the financed property.",
+      "includes": [
+        "rental-property finance",
+        "office-property finance",
+        "hotel-property finance"
+      ],
+      "excludes": [
+        "corporate loan not dependent on property cash flow"
+      ],
+      "synonyms": [],
+      "basel": {
+        "exposure_class": "specialised_lending",
+        "code": "IPRE"
+      }
+    },
+    "lending.cre.hvcre": {
+      "name": "High-Volatility Commercial Real Estate",
+      "type": "leaf",
+      "parent": "lending.cre",
+      "definition": "Higher-risk CRE acquisition, development, or construction financing meeting applicable high-volatility treatment.",
+      "includes": [
+        "development finance",
+        "construction finance"
+      ],
+      "excludes": [
+        "stabilised low-risk CRE lending"
+      ],
+      "synonyms": [],
+      "basel": {
+        "exposure_class": "specialised_lending",
+        "code": "HVCRE"
+      }
+    },
+    "lending.financial_institutions": {
+      "name": "Financial Institutions Lending",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which financial-institution lending activities are materially described?",
+      "definition": "Loans or facilities to banks, broker-dealers, insurers, funds, asset managers, and other NBFIs.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.fi.banks",
+        "lending.fi.nbfis",
+        "lending.fi.funds"
+      ]
+    },
+    "lending.fi.banks": {
+      "name": "Bank / Broker-Dealer Lending",
+      "type": "leaf",
+      "parent": "lending.financial_institutions",
+      "definition": "Credit facilities or loans to banks, broker-dealers, or similar intermediaries.",
+      "includes": [
+        "bank loan",
+        "broker-dealer credit"
+      ],
+      "excludes": [
+        "interdealer securities trading"
+      ],
+      "synonyms": []
+    },
+    "lending.fi.nbfis": {
+      "name": "NBFI / Insurance Lending",
+      "type": "leaf",
+      "parent": "lending.financial_institutions",
+      "definition": "Lending to insurers, finance companies, asset managers, or other NBFIs not better classified as fund finance.",
+      "includes": [
+        "insurance-company lending",
+        "finance-company lending"
+      ],
+      "excludes": [
+        "hedge-fund prime financing"
+      ],
+      "synonyms": []
+    },
+    "lending.fi.funds": {
+      "name": "Fund Finance",
+      "type": "leaf",
+      "parent": "lending.financial_institutions",
+      "definition": "Lending to investment funds or fund vehicles, including subscription and NAV facilities.",
+      "includes": [
+        "subscription line",
+        "NAV facility",
+        "fund finance"
+      ],
+      "excludes": [
+        "prime brokerage margin financing"
+      ],
+      "synonyms": []
+    },
+    "lending.sovereign_public": {
+      "name": "Sovereign / Public Sector Lending",
+      "type": "leaf",
+      "parent": "business.lending",
+      "definition": "Loans or credit facilities to sovereigns, governments, public-sector entities, or public/multilateral institutions.",
+      "includes": [
+        "sovereign loan",
+        "PSE lending",
+        "public-sector credit"
+      ],
+      "excludes": [
+        "secondary sovereign bond trading"
+      ],
+      "synonyms": []
+    },
+    "lending.trade_working_capital": {
+      "name": "Trade & Working Capital Finance",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which trade or working-capital finance activities are materially described?",
+      "definition": "Trade-related lending, guarantees, letters of credit, supply-chain finance, receivables finance, and related facilities.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.trade.trade_loans",
+        "lending.trade.lc_guarantees",
+        "lending.trade.receivables_supply_chain"
+      ]
+    },
+    "lending.trade.trade_loans": {
+      "name": "Trade Loans",
+      "type": "leaf",
+      "parent": "lending.trade_working_capital",
+      "definition": "Short-term lending supporting import, export, inventory, or trade transactions.",
+      "includes": [
+        "import loan",
+        "export loan",
+        "trade loan"
+      ],
+      "excludes": [
+        "general corporate term loan"
+      ],
+      "synonyms": []
+    },
+    "lending.trade.lc_guarantees": {
+      "name": "Letters of Credit / Guarantees",
+      "type": "leaf",
+      "parent": "lending.trade_working_capital",
+      "definition": "Documentary/standby letters of credit, guarantees, and similar contingent trade facilities.",
+      "includes": [
+        "letter of credit",
+        "standby LC",
+        "bank guarantee"
+      ],
+      "excludes": [
+        "ordinary funded loan"
+      ],
+      "synonyms": []
+    },
+    "lending.trade.receivables_supply_chain": {
+      "name": "Receivables / Supply-Chain Finance",
+      "type": "leaf",
+      "parent": "lending.trade_working_capital",
+      "definition": "Financing based on trade receivables, invoices, payables, or supply-chain arrangements.",
+      "includes": [
+        "receivables finance",
+        "invoice finance",
+        "supply-chain finance",
+        "factoring"
+      ],
+      "excludes": [
+        "securities financing"
+      ],
+      "synonyms": []
+    },
+    "lending.consumer": {
+      "name": "Consumer Lending",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which consumer-lending activities are materially described?",
+      "definition": "Credit extended to individuals for non-mortgage consumer purposes.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.consumer.cards",
+        "lending.consumer.auto",
+        "lending.consumer.personal"
+      ]
+    },
+    "lending.consumer.cards": {
+      "name": "Credit Cards",
+      "type": "leaf",
+      "parent": "lending.consumer",
+      "definition": "Consumer revolving credit-card lending and related receivables.",
+      "includes": [
+        "credit-card loans",
+        "card receivables"
+      ],
+      "excludes": [
+        "debit-card processing without credit"
+      ],
+      "synonyms": []
+    },
+    "lending.consumer.auto": {
+      "name": "Auto Lending",
+      "type": "leaf",
+      "parent": "lending.consumer",
+      "definition": "Consumer lending used to finance automobiles or personal vehicles.",
+      "includes": [
+        "auto loan",
+        "car finance"
+      ],
+      "excludes": [
+        "commercial fleet object finance"
+      ],
+      "synonyms": []
+    },
+    "lending.consumer.personal": {
+      "name": "Personal Lending",
+      "type": "leaf",
+      "parent": "lending.consumer",
+      "definition": "Personal consumer lending not classified as cards, auto, or residential mortgage.",
+      "includes": [
+        "personal loan",
+        "consumer installment loan"
+      ],
+      "excludes": [
+        "mortgage",
+        "corporate loan"
+      ],
+      "synonyms": []
+    },
+    "lending.residential_mortgage": {
+      "name": "Residential Mortgage Lending",
+      "type": "multi_label",
+      "parent": "business.lending",
+      "question": "Which residential-mortgage lending activities are materially described?",
+      "definition": "Credit secured by residential real estate, including owner-occupied, income-producing residential property, and home-equity credit.",
+      "includes": [],
+      "excludes": [],
+      "synonyms": [],
+      "children": [
+        "lending.mortgage.owner_occupied",
+        "lending.mortgage.income_producing",
+        "lending.mortgage.home_equity"
+      ]
+    },
+    "lending.mortgage.owner_occupied": {
+      "name": "Owner-Occupied Residential Mortgage",
+      "type": "leaf",
+      "parent": "lending.residential_mortgage",
+      "definition": "Mortgage lending secured by a residence primarily occupied by the borrower.",
+      "includes": [
+        "home mortgage",
+        "owner-occupied mortgage"
+      ],
+      "excludes": [
+        "buy-to-let mortgage",
+        "RMBS"
+      ],
+      "synonyms": []
+    },
+    "lending.mortgage.income_producing": {
+      "name": "Income-Producing Residential Mortgage",
+      "type": "leaf",
+      "parent": "lending.residential_mortgage",
+      "definition": "Residential mortgage lending where repayment materially depends on rental or other property income.",
+      "includes": [
+        "buy-to-let mortgage",
+        "rental-property mortgage"
+      ],
+      "excludes": [
+        "owner-occupied mortgage",
+        "commercial CRE loan"
+      ],
+      "synonyms": []
+    },
+    "lending.mortgage.home_equity": {
+      "name": "Home Equity Lending",
+      "type": "leaf",
+      "parent": "lending.residential_mortgage",
+      "definition": "Consumer credit secured by accumulated equity in residential property.",
+      "includes": [
+        "home-equity loan",
+        "HELOC"
+      ],
+      "excludes": [
+        "first-lien purchase mortgage"
+      ],
+      "synonyms": []
+    }
+  }
+}
