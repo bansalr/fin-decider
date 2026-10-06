@@ -1,0 +1,12 @@
+[instructions]
+{parent_question}
+Category: {name}
+Definition: {definition}
+Includes: {includes}
+Excludes: {excludes}
+Also known as: {synonyms}
+Does the article materially describe or implicate this category, as defined (not merely mention it in passing)?
+[criteria.true]
+The article materially describes this activity.
+[criteria.false]
+The activity is absent, only incidental, or falls under an exclusion.

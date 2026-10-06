@@ -1,0 +1,96 @@
+benchmark:
+  name: jev_bloomberg_basel
+  spec_version: "1.1.0"
+
+run:
+  label: baseline
+  seed: 917341            # MinHash seed for deduplication
+  allow_dirty_git: false
+
+dataset:
+  provider: huggingface
+  repository: danidanou/Bloomberg_Financial_News
+  revision: "2db0c7e4d169e091762978637ecfa4f54c22fd81"
+  file: bloomberg_financial_data.parquet.gzip
+  file_sha256: "c0b40bce8aa440ef54cab90dd2b9671ca778eb8e20673b8a79e959e4049511e9"
+  local_dir: data/hf
+
+corpus:
+  directory: corpus
+  normalization_version: norm_v1
+  dedupe:
+    version: dedupe_v1
+    exact: sha256_normalized_headline_body
+    near: minhash_lsh
+    num_perm: 128
+    shingle_words: 5
+    jaccard_threshold: 0.90
+    canonical_rule: earliest_date_then_article_id
+
+ontology:
+  path: gsib_basel_ontology_v1.0.json
+  version: "1.0.0"
+  sha256: "80a355a7fc2d0e50c74c1741b8903b5fc2e9dd923db37230212c4bec28d3228e"
+
+input:
+  mode: headline_plus_article
+  max_chars: 12000
+  separator: "\n\n"
+  truncation_strategy: head
+  normalization:
+    unicode: NFC
+    collapse_whitespace: true
+    strip_html: true
+
+hierarchy:
+  traversal:
+    mode: breadth_first
+    threshold: 0.30
+    max_depth: 10
+    max_nodes_per_article: 100
+  classification:
+    positive_threshold: 0.50
+  materialize_skipped_by_routing: false
+
+templates:
+  boolean_v1:
+    path: templates/decision/boolean_v1.txt
+    sha256: "df6bccc8cc3e851477f097455db5e4db4dc69a16273281ffc00129865e4717f6"
+
+# Both anchors are reached through Vercel AI Gateway with byte-identical requests;
+# only `model` and `provider_lock` differ. The gateway exposes no dated versions,
+# so identity is enforced via provider lock + returned-model check + catalog snapshot.
+models:
+  jev:
+    enabled: true
+    adapter: jev
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: typesafe-ai/jev
+    provider_lock: [typesafe-ai]
+    api_key_env: VERCEL_API_KEY
+    template: boolean_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  laya:
+    enabled: true
+    adapter: laya
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: convaiinnovations/laya
+    provider_lock: [boundless]
+    api_key_env: VERCEL_API_KEY
+    template: boolean_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+output:
+  directory: classification_results
+  format: parquet
+  shard_rows: 5000
+  include_raw_provider_response: false

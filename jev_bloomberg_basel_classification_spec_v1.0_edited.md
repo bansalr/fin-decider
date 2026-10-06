@@ -1,6 +1,99 @@
 # Jev × Bloomberg × Basel Hierarchical Classification Benchmark
 
-## Implementation Specification v1.0
+## Implementation Specification v1.0 (with v1.1 amendments)
+
+## 0. v1.1 amendments
+
+These amendments take precedence over the v1.0 text below where they
+conflict. They record decisions made after v1.0 and the deviations the
+implementation (`src/classifier/`, `configs/classification.yaml`) makes.
+
+### 0.1 Anchor models: Jev and Laya
+
+Jev (`typesafe-ai/jev`) and Laya (`convaiinnovations/laya`) are both
+first-class anchor models. Further comparators remain an open selection
+problem; §16's list is a candidate list, not a fixed panel.
+
+### 0.2 Provider: Vercel AI Gateway
+
+Both anchors are invoked through Vercel AI Gateway
+(`POST https://ai-gateway.vercel.sh/v1/evaluate`), authenticated by
+`VERCEL_API_KEY`. This replaces `provider: typesafe` and
+`TYPESAFE_API_KEY` in §20/§21.
+
+Fairness (§18) is enforced structurally: both models receive
+byte-identical requests (same state text, same question keys, same
+rendered template). Only `model` and the provider lock differ. A single
+template (`templates/decision/boolean_v1.txt`) is shared. Each
+`multi_label` node is one request with one independent `boolean`
+question per child.
+
+Context limits reported by the gateway catalog: Jev 32,000 tokens (state +
+longest question), Laya 8,192 tokens. The 12,000-character input cap fits
+both, so no model-specific truncation is applied.
+
+### 0.3 Version pinning deviation (§17)
+
+The gateway exposes no dated or pinned version identifiers for either
+model. In place of a pinned version, the run enforces and records:
+
+-   an exact model ID in configuration (`latest` aliases are rejected);
+-   a provider lock (`providerOptions.gateway.only`);
+-   a per-response check that the returned `model` equals the requested
+    model and that the gateway's `finalProvider` is in the lock (fatal
+    otherwise);
+-   a hash of the gateway catalog entry (id, type, context window,
+    release date, owner) at run start; a resume fails if it has changed;
+-   the gateway `generationId` of every call.
+
+Gateway decision fallbacks are never configured; a response indicating
+a fallback is fatal.
+
+### 0.4 Full deduplicated corpus replaces sampling (§5, §8, §23, §29)
+
+The primary run classifies every canonical article of the full
+deduplicated Bloomberg corpus. There is no benchmark sample.
+
+Deduplication (`dedupe_v1`): drop rows with empty normalized headline
+and body; group exact duplicates by SHA-256 of normalized headline +
+body; link near-duplicates by MinHash LSH (128 permutations, `affine32`
+scheme, word 5-shingles of the lowercased body, estimated Jaccard ≥
+0.90; bodies with fewer than 10 shingles take part in the exact pass
+only); merge with union-find. The canonical member of each cluster is
+the earliest-dated article, ties broken by smallest `article_id`.
+`corpus/clusters.parquet` retains every source row's cluster and
+duplicate reason.
+
+`sample_manifest_hash` is replaced throughout by `corpus_manifest_hash`:
+SHA-256 over the sorted canonical article IDs, dedupe parameters,
+normalization version, MinHash scheme, and dataset file hash. The run
+manifest records `corpus` instead of `sample`.
+
+Runs restricted with `--limit` are engineering runs: the scope is part
+of the run identity and recorded in the manifest.
+
+### 0.5 Input mode (§7)
+
+The single canonical mode is `headline_plus_article`: normalized
+headline, separator, normalized body, head-truncated to `max_chars`.
+
+### 0.6 Run identity materiality
+
+Operational parameters that cannot change a classification
+(`concurrency`, `retries`, `timeout_seconds`, `run.label`,
+`run.allow_dirty_git`) are excluded from the run-ID hash; every other
+configuration field is included. Engineering runs may set
+`allow_dirty_git: true`; official runs require a clean tree.
+
+### 0.7 Result rows
+
+Rows carry, in addition to §25: `prediction_key`, `attempt`,
+`attempts`, `reused_from_cache`, `model_returned`, `routing_provider`,
+`generation_id`. Per-call fields (latency, tokens, cost, generation ID)
+repeat on every child row of the same call; aggregate them by
+`prediction_key`. Unvisited nodes are omitted (`SKIPPED_BY_ROUTING` is
+not materialized). Work shards live under `_work/`; the final
+`results/model=<m>/` keeps the latest attempt per article.
 
 ## 1. Purpose
 

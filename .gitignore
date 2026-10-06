@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+secrets/
+*.swp
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+corpus/
+classification_results/
