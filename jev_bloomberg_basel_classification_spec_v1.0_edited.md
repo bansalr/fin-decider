@@ -54,15 +54,20 @@ a fallback is fatal.
 The primary run classifies every canonical article of the full
 deduplicated Bloomberg corpus. There is no benchmark sample.
 
-Deduplication (`dedupe_v1`): drop rows with empty normalized headline
-and body; group exact duplicates by SHA-256 of normalized headline +
-body; link near-duplicates by MinHash LSH (128 permutations, `affine32`
-scheme, word 5-shingles of the lowercased body, estimated Jaccard ≥
-0.90; bodies with fewer than 10 shingles take part in the exact pass
-only); merge with union-find. The canonical member of each cluster is
-the earliest-dated article, ties broken by smallest `article_id`.
-`corpus/clusters.parquet` retains every source row's cluster and
+Deduplication (`dedupe_v2_exact`): drop rows with empty normalized
+headline and body; remove exact duplicates only, defined as identical
+SHA-256 of normalized headline + `\n` + normalized body (publish date is
+ignored, so a word-for-word republication on another day is a
+duplicate). The canonical member of each duplicate group is the
+earliest-dated article, ties broken by smallest `article_id`.
+`corpus/clusters.parquet` retains every source row's group and
 duplicate reason.
+
+Near-duplicate merging is deliberately not applied. A MinHash LSH pass
+(`near: minhash_lsh`, Jaccard ≥ 0.90) is implemented but disabled:
+on this corpus it merged recurring templated reports (daily price
+tables, money-market tables, earnings lists) that differ in date and
+figures and are distinct articles.
 
 `sample_manifest_hash` is replaced throughout by `corpus_manifest_hash`:
 SHA-256 over the sorted canonical article IDs, dedupe parameters,

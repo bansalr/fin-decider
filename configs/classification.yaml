@@ -19,9 +19,9 @@ corpus:
   directory: corpus
   normalization_version: norm_v1
   dedupe:
-    version: dedupe_v1
+    version: dedupe_v2_exact
     exact: sha256_normalized_headline_body
-    near: minhash_lsh
+    near: none                   # exact duplicates only (user decision 2026-10-06)
     num_perm: 128
     shingle_words: 5
     jaccard_threshold: 0.90
