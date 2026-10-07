@@ -152,18 +152,18 @@ async def test_shrink_on_422_resends_shorter_state(cfg, template, monkeypatch):
     def handler(request):
         b = json.loads(request.content)
         sent.append(len(b["state"]))
-        if len(b["state"]) > 60:
+        if len(b["state"]) > 600:
             return httpx.Response(422, text="That request was rejected")
         return httpx.Response(200, json=ok_body(b, cfg.models["laya"].model, "boundless"))
 
     monkeypatch.setenv("VERCEL_API_KEY", "k")
     mcfg = cfg.models["laya"].model_copy(update={"shrink_on_422": True})
     a = GatewayAdapter("laya", mcfg, transport=httpx.MockTransport(handler))
-    text = "x" * 100
-    art = ArticleInput("a", text, "h", 100, 100, False, "head")
+    text = "x" * 1000
+    art = ArticleInput("a", text, "h", 1000, 1000, False, "head")
     root, children = onto_root(cfg)
     d = await a.classify(art, root, children, ClassificationContext(mcfg.model, template))
-    assert sent == [100, 80, 64, 51] and d.state_chars == 51
+    assert sent == [1000, 800, 640, 512] and d.state_chars == 512
 
 
 async def test_422_without_shrink_is_invalid_request(cfg, template, monkeypatch):
