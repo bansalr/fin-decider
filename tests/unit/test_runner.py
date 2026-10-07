@@ -47,12 +47,18 @@ def variant(d, path, value):
 
 def test_run_identity(small_cfg):
     d, cfg = small_cfg
-    base = prepare_run(cfg, limit=None).run_hash
-    assert prepare_run(cfg, limit=None).run_hash == base
-    assert prepare_run(variant(d, ["models", "jev", "concurrency"], 4), limit=None).run_hash == base
-    assert prepare_run(variant(d, ["models", "jev", "retries"], 1), limit=None).run_hash == base
-    assert prepare_run(variant(d, ["output", "directory"], "/elsewhere"), limit=None).run_hash == base
-    assert prepare_run(variant(d, ["models", "d1", "enabled"], False), limit=None).run_hash != base
+    base = prepare_run(cfg, model="jev", limit=None).run_hash
+    assert prepare_run(cfg, model="jev", limit=None).run_hash == base
+    def h(c):
+        return prepare_run(c, model="jev", limit=None).run_hash
+
+    assert h(variant(d, ["models", "jev", "concurrency"], 4)) == base
+    assert h(variant(d, ["models", "jev", "retries"], 1)) == base
+    assert h(variant(d, ["output", "directory"], "/elsewhere")) == base
+    # Other models never affect this model's identity.
+    assert h(variant(d, ["models", "d1", "enabled"], False)) == base
+    assert h(variant(d, ["models", "laya", "model"], "x/y")) == base
+    assert prepare_run(cfg, model="laya", limit=None).run_hash != base
     changed = [
         variant(d, ["hierarchy", "traversal", "threshold"], 0.25),
         variant(d, ["hierarchy", "classification", "positive_threshold"], 0.6),
@@ -60,24 +66,24 @@ def test_run_identity(small_cfg):
         variant(d, ["input", "max_chars"], 8000),
     ]
     for c in changed:
-        assert prepare_run(c, limit=None).run_hash != base
-    assert prepare_run(cfg, limit=5).run_hash != base
+        assert prepare_run(c, model="jev", limit=None).run_hash != base
+    assert prepare_run(cfg, model="jev", limit=5).run_hash != base
 
 
 def test_run_identity_corpus_and_template(small_cfg, tmp_path):
     d, cfg = small_cfg
-    base = prepare_run(cfg, limit=None).run_hash
+    base = prepare_run(cfg, model="jev", limit=None).run_hash
     m = json.loads((tmp_path / "corpus/manifest.json").read_text())
     m["corpus_manifest_hash"] = "d" * 64
     (tmp_path / "corpus/manifest.json").write_text(json.dumps(m))
-    assert prepare_run(cfg, limit=None).run_hash != base
+    assert prepare_run(cfg, model="jev", limit=None).run_hash != base
     with pytest.raises(ValueError):
-        prepare_run(variant(d, ["templates", "boolean_v1", "sha256"], "e" * 64), limit=None)
+        prepare_run(variant(d, ["templates", "boolean_v1", "sha256"], "e" * 64), model="jev", limit=None)
 
 
 async def test_run_and_resume(small_cfg):
     d, cfg = small_cfg
-    rc = prepare_run(cfg, limit=None)
+    rc = prepare_run(cfg, model="jev", limit=None)
     # First session: node "relevance.gsib_activity" fails for everyone.
     a1 = FakeAdapter("jev", fail_nodes={"relevance.gsib_activity": ProviderFailure("TIMEOUT", "timeout")},
                      overrides={"relevance.gsib_activity": 0.9})
@@ -109,3 +115,16 @@ async def test_run_and_resume(small_cfg):
     assert final.height == final.unique(subset=["article_id", "node_id", "child_id"]).height
     labels = results.leaf_labels(final)
     assert labels.height > 0
+
+
+def test_gliclass_identity_material_fields(small_cfg):
+    d, cfg = small_cfg
+
+    def h(c):
+        return prepare_run(c, model="gliclass", limit=None).run_hash
+
+    base = h(cfg)
+    assert h(variant(d, ["models", "gliclass", "device"], "mps")) == base
+    assert h(variant(d, ["models", "gliclass", "batch_size"], 4)) == base
+    assert h(variant(d, ["models", "gliclass", "dtype"], "float32")) != base
+    assert h(variant(d, ["models", "gliclass", "revision"], "a" * 40)) != base

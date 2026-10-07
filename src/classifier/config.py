@@ -113,13 +113,14 @@ class Hierarchy(Strict):
 
 
 class Template(Strict):
+    kind: Literal["boolean", "label"]
     path: str
     sha256: Sha256
 
 
 class ModelCfg(Strict):
     enabled: bool
-    adapter: Literal["jev", "laya", "d1", "fake"]
+    adapter: Literal["jev", "laya", "d1", "gliclass", "fake"]
     provider: Literal["vercel_ai_gateway", "local"]
     endpoint: str | None
     model: str
@@ -130,6 +131,13 @@ class ModelCfg(Strict):
     retries: int = Field(ge=0, le=20)
     concurrency: int = Field(ge=1, le=512)
     allow_returned_model_mismatch: bool
+    # Local models only
+    revision: str | None = None
+    device: str | None = None
+    dtype: Literal["float32", "float16", "bfloat16"] | None = None
+    max_length: int | None = Field(default=None, ge=32, le=8192)
+    batch_size: int | None = Field(default=None, ge=1, le=1024)
+    batch_wait_ms: float | None = Field(default=None, ge=0, le=1000)
 
     @field_validator("model")
     @classmethod
@@ -140,9 +148,19 @@ class ModelCfg(Strict):
         return v
 
     @model_validator(mode="after")
-    def _remote_needs_key(self) -> "ModelCfg":
-        if self.provider == "vercel_ai_gateway" and (not self.endpoint or not self.api_key_env):
-            raise ValueError("vercel_ai_gateway models need endpoint and api_key_env")
+    def _provider_fields(self) -> "ModelCfg":
+        local = ("revision", "device", "dtype", "max_length", "batch_size", "batch_wait_ms")
+        if self.provider == "vercel_ai_gateway":
+            if not self.endpoint or not self.api_key_env:
+                raise ValueError("vercel_ai_gateway models need endpoint and api_key_env")
+            if any(getattr(self, f) is not None for f in local):
+                raise ValueError(f"local-model fields {local} are not valid for gateway models")
+        if self.provider == "local" and self.adapter != "fake":
+            missing = [f for f in local if getattr(self, f) is None]
+            if missing:
+                raise ValueError(f"local model needs {missing}")
+            if not GIT_SHA_RE.match(self.revision or ""):
+                raise ValueError(f"local model revision must be a 40-hex commit SHA, got {self.revision!r}")
         return self
 
 
@@ -173,9 +191,29 @@ class Config(Strict):
         return self
 
 
-def load_config(path: str | Path) -> Config:
+def apply_overrides(data: dict, overrides: list[str]) -> dict:
+    """Apply `dotted.key=value` overrides; values are parsed as YAML scalars.
+    Overrides go through the same strict validation as the file, and material
+    ones change the run ID exactly as editing the file would."""
+    for item in overrides:
+        key, sep, raw = item.partition("=")
+        if not sep:
+            raise ValueError(f"override {item!r} must look like a.b.c=value")
+        parts = key.split(".")
+        cur = data
+        for p in parts[:-1]:
+            if not isinstance(cur.get(p), dict):
+                raise ValueError(f"override {item!r}: no section {p!r}")
+            cur = cur[p]
+        if parts[-1] not in cur:
+            raise ValueError(f"override {item!r}: unknown key {parts[-1]!r}")
+        cur[parts[-1]] = yaml.safe_load(raw)
+    return data
+
+
+def load_config(path: str | Path, overrides: list[str] | None = None) -> Config:
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    return Config.model_validate(data)
+    return Config.model_validate(apply_overrides(data, overrides or []))
 
 
 def check_credentials(cfg: Config, models: list[str]) -> None:

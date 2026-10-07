@@ -54,8 +54,14 @@ hierarchy:
 
 templates:
   boolean_v1:
+    kind: boolean
     path: templates/decision/boolean_v1.txt
     sha256: "df6bccc8cc3e851477f097455db5e4db4dc69a16273281ffc00129865e4717f6"
+
+  gliclass_label_v1:
+    kind: label
+    path: templates/gliclass/label_v1.txt
+    sha256: "ab2ace313c4d3794cbc8c07f617a12b23d149f206b0a20d7950c4d861bbbf1c5"
 
 # All decision models (Jev, Laya, d1) are reached through Vercel AI Gateway with byte-identical requests;
 # only `model` and `provider_lock` differ. The gateway exposes no dated versions,
@@ -101,6 +107,28 @@ models:
     timeout_seconds: 60
     retries: 6
     concurrency: 32
+    allow_returned_model_mismatch: false
+
+  # Open-weight zero-shot encoder, run locally (Colab GPU for the full corpus).
+  # dtype and revision are material; device and batching are operational.
+  gliclass:
+    enabled: true
+    adapter: gliclass
+    provider: local
+    endpoint: null
+    model: knowledgator/gliclass-large-v3.0
+    revision: e065d1844f913a9aa611cf33623a9538b8aa8841
+    provider_lock: []
+    api_key_env: null
+    template: gliclass_label_v1
+    device: cuda
+    dtype: float16
+    max_length: 512
+    batch_size: 32
+    batch_wait_ms: 20
+    timeout_seconds: 600
+    retries: 0
+    concurrency: 128
     allow_returned_model_mismatch: false
 
 output:

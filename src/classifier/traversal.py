@@ -117,6 +117,8 @@ def _row(visit: NodeVisit, node_id: str, child_id: str, key: str, score: float |
         "output_tokens": d.output_tokens if d else None,
         "provider_cost_usd": d.cost_usd if d else None,
         "generation_id": d.generation_id if d else None,
+        "model_truncated": d.model_truncated if d else None,
+        "model_submitted_tokens": d.model_submitted_tokens if d else None,
         "attempts": d.attempts if d else attempts,
         "reused_from_cache": from_cache,
         "status": status,

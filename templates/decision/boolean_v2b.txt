@@ -1,0 +1,7 @@
+[instructions]
+{yes_no_question}
+Not: {excludes}
+[criteria.true]
+{criteria_true}
+[criteria.false]
+{criteria_false}

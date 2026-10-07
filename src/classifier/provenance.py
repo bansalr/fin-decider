@@ -48,12 +48,25 @@ def git_info(repo: str | Path = ".") -> dict[str, Any]:
 
 def environment_info() -> dict[str, Any]:
     libs = {}
-    for name in ("pydantic", "httpx", "pyarrow", "polars", "datasketch", "huggingface-hub"):
+    for name in ("pydantic", "httpx", "pyarrow", "polars", "datasketch", "huggingface-hub",
+                 "torch", "transformers", "gliclass"):
         try:
             libs[name] = metadata.version(name)
         except metadata.PackageNotFoundError:
             libs[name] = None
+    accel = {}
+    if libs.get("torch"):
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                accel = {"cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0)}
+            elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+                accel = {"mps": True}
+        except Exception:  # pragma: no cover - provenance must never break a run
+            accel = {}
     return {
+        "accelerator": accel,
         "python": sys.version.split()[0],
         "platform": platform.platform(),
         "machine": platform.machine(),

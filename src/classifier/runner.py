@@ -25,26 +25,37 @@ from .templates import load_template
 from .traversal import classify_article
 
 # Operational knobs that do not change any classification; excluded from identity hashes.
-NON_MATERIAL_MODEL_FIELDS = {"concurrency", "retries", "timeout_seconds"}
+NON_MATERIAL_MODEL_FIELDS = {"concurrency", "retries", "timeout_seconds", "device", "batch_size", "batch_wait_ms"}
 NON_MATERIAL_RUN_FIELDS = {"allow_dirty_git", "label"}
 NON_MATERIAL_OUTPUT_FIELDS = {"directory", "shard_rows"}
 SNAPSHOT_FIELDS = ("id", "type", "context_window", "released", "owned_by")
 
 
-def material_config(cfg: Config) -> dict[str, Any]:
+SHARED_SECTIONS = ("benchmark", "dataset", "corpus", "ontology", "input", "hierarchy")
+
+
+def material_config(cfg: Config, model: str) -> dict[str, Any]:
+    """Everything that can change this model's classifications: the shared sections,
+    this model's settings, and its template. Other models never affect a run's identity."""
     d = cfg.model_dump()
-    d["run"] = {k: v for k, v in d["run"].items() if k not in NON_MATERIAL_RUN_FIELDS}
-    d["output"] = {k: v for k, v in d["output"].items() if k not in NON_MATERIAL_OUTPUT_FIELDS}
-    d["models"] = {
-        name: {k: v for k, v in m.items() if k not in NON_MATERIAL_MODEL_FIELDS}
-        for name, m in d["models"].items()
-        if m["enabled"]
+    m = d["models"][model]
+    return {k: d[k] for k in SHARED_SECTIONS} | {
+        "run": {k: v for k, v in d["run"].items() if k not in NON_MATERIAL_RUN_FIELDS},
+        "output": {k: v for k, v in d["output"].items() if k not in NON_MATERIAL_OUTPUT_FIELDS},
+        "model": {"key": model} | {k: v for k, v in m.items() if k not in NON_MATERIAL_MODEL_FIELDS},
+        "template": d["templates"][m["template"]],
     }
-    return d
 
 
 def model_config_hash(cfg: Config, model: str) -> str:
-    return sha256_obj(material_config(cfg)["models"][model])
+    return sha256_obj(material_config(cfg, model)["model"])
+
+
+def shared_inputs_hash(cfg: Config, onto_sha: str, corpus_hash: str, scope: dict) -> str:
+    """Identical across models classified on the same inputs; use it to pair runs for comparison."""
+    d = cfg.model_dump()
+    return sha256_obj({k: d[k] for k in SHARED_SECTIONS} | {"ontology_sha": onto_sha, "corpus": corpus_hash,
+                                                             "scope": scope})
 
 
 @dataclass
@@ -54,6 +65,7 @@ class RunContext:
     corpus: pl.DataFrame
     corpus_manifest: dict[str, Any]
     templates: dict[str, Any]
+    model: str
     run_id: str
     run_hash: str
     run_dir: Path
@@ -61,11 +73,16 @@ class RunContext:
     scope: dict[str, Any]
 
 
-def prepare_run(cfg: Config, *, limit: int | None, repo_root: Path = Path(".")) -> RunContext:
+def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path = Path(".")) -> RunContext:
     onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
     if onto.version != cfg.ontology.version:
         raise ValueError(f"ontology version {onto.version} != configured {cfg.ontology.version}")
-    templates = {name: load_template(t.path, t.sha256) for name, t in cfg.templates.items()}
+    if model not in cfg.models:
+        raise ValueError(f"unknown model {model!r}")
+    tname = cfg.models[model].template
+    t = cfg.templates[tname]
+    templates = {tname: load_template(t.path, t.sha256, t.kind)}
+    templates[tname].check_ontology(onto)
     corpus, cman = load_corpus(Path(cfg.corpus.directory))
     if cman["dataset_sha256"] != cfg.dataset.file_sha256:
         raise ValueError("corpus was prepared from a different dataset file; rerun `classify prepare`")
@@ -82,23 +99,25 @@ def prepare_run(cfg: Config, *, limit: int | None, repo_root: Path = Path(".")) 
     if git["dirty"] and not cfg.run.allow_dirty_git:
         raise RuntimeError("git working tree is dirty; commit first or set run.allow_dirty_git for engineering runs")
 
-    run_id, run_hash = make_run_id(
-        resolved_config=material_config(cfg) | {"scope": scope},
+    run_hash_short, run_hash = make_run_id(
+        resolved_config=material_config(cfg, model) | {"scope": scope},
         ontology_hash=onto.sha256,
         dataset_hash=cfg.dataset.file_sha256,
         corpus_manifest_hash=cman["corpus_manifest_hash"],
         template_hashes={k: t.sha256 for k, t in templates.items()},
         git_commit=git["commit"],
     )
+    run_id = f"{model}-{run_hash_short}"
     run_dir = Path(cfg.output.directory) / run_id
-    return RunContext(cfg, onto, corpus, cman, templates, run_id, run_hash, run_dir, git, scope)
+    return RunContext(cfg, onto, corpus, cman, templates, model, run_id, run_hash, run_dir, git, scope)
 
 
 async def model_snapshot(cfg: Config, model: str) -> dict[str, Any]:
     """The Gateway's catalog entry for the model at run start (versions are not pinnable)."""
     m = cfg.models[model]
     if m.provider != "vercel_ai_gateway":
-        return {"id": m.model, "provider": m.provider}
+        return {"id": m.model, "provider": m.provider, "revision": m.revision, "dtype": m.dtype,
+                "max_length": m.max_length}
     import os
 
     async with httpx.AsyncClient(timeout=30) as client:
@@ -144,8 +163,10 @@ def load_or_init_manifest(rc: RunContext) -> dict[str, Any]:
         },
         "ontology": {"id": rc.onto.id, "version": rc.onto.version, "sha256": rc.onto.sha256},
         "template_hashes": {k: t.sha256 for k, t in rc.templates.items()},
-        "config_sha256": sha256_obj(material_config(cfg)),
-        "resolved_config": material_config(cfg),
+        "config_sha256": sha256_obj(material_config(cfg, rc.model)),
+        "resolved_config": material_config(cfg, rc.model),
+        "shared_inputs_sha256": shared_inputs_hash(cfg, rc.onto.sha256, rc.corpus_manifest["corpus_manifest_hash"],
+                                                   rc.scope),
         "skipped_by_routing": "omitted",
         "row_semantics": "article x model x node x child; per-call usage fields repeat per child row, aggregate by prediction_key",
         "models": {},
@@ -171,6 +192,8 @@ def _log(rc: RunContext, msg: str) -> None:
 async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: float | None,
                     adapter: ClassificationAdapter | None = None, progress_every: int = 500) -> dict[str, Any]:
     cfg = rc.cfg
+    if model != rc.model:
+        raise ValueError(f"run context was prepared for {rc.model}, not {model}")
     mcfg = cfg.models[model]
     if not mcfg.enabled:
         raise ValueError(f"model {model} is disabled in config")

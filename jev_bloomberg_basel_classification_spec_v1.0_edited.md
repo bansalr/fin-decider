@@ -8,11 +8,24 @@ These amendments take precedence over the v1.0 text below where they
 conflict. They record decisions made after v1.0 and the deviations the
 implementation (`src/classifier/`, `configs/classification.yaml`) makes.
 
-### 0.1 Anchor models: Jev and Laya
+### 0.1 Model panel
 
-Jev (`typesafe-ai/jev`) and Laya (`convaiinnovations/laya`) are both
-first-class anchor models. Further comparators remain an open selection
-problem; §16's list is a candidate list, not a fixed panel.
+Anchor models: Jev (`typesafe-ai/jev`) and Laya
+(`convaiinnovations/laya`).
+
+Comparators in v1:
+
+-   Liquid d1 (`liquid/d1`): a third hosted decision model on the same
+    gateway API, receiving byte-identical requests.
+-   GLiClass (`knowledgator/gliclass-large-v3.0`, revision
+    `e065d1844f913a9aa611cf33623a9538b8aa8841`): an open-weight
+    zero-shot encoder run locally (see §0.9).
+
+Deferred to v2: an NLI cross-encoder (DeBERTa-v3-large zeroshot v2.0),
+which GLiClass outperforms on published zero-shot benchmarks at about
+4x the throughput; hosted rerankers, whose per-label re-submission of
+the article makes full-corpus cost disproportionate; and embedding
+similarity, which has no a-priori decision threshold.
 
 ### 0.2 Provider: Vercel AI Gateway
 
@@ -84,11 +97,28 @@ headline, separator, normalized body, head-truncated to `max_chars`.
 
 ### 0.6 Run identity materiality
 
-Operational parameters that cannot change a classification
-(`concurrency`, `retries`, `timeout_seconds`, `run.label`,
-`run.allow_dirty_git`) are excluded from the run-ID hash; every other
-configuration field is included. Engineering runs may set
-`allow_dirty_git: true`; official runs require a clean tree.
+Each model has its own run identity. A run's hash covers the shared
+sections (benchmark, dataset, corpus, ontology, input, hierarchy), that
+model's material settings, its template, the corpus manifest hash, the
+ontology file hash, the git commit, and the scope (full corpus or
+`--limit N`). Other models' settings never affect a run's identity.
+Run directories are named `<model>-<hash>`.
+
+Operational parameters that cannot change a classification are
+excluded: `concurrency`, `retries`, `timeout_seconds`, `device`,
+`batch_size`, `batch_wait_ms`, `run.label`, `run.allow_dirty_git`,
+`output.directory`, `output.shard_rows`. Model `revision`, `dtype` and
+`max_length` are material.
+
+Every manifest records `shared_inputs_sha256` (shared sections,
+ontology, corpus, scope). Runs of different models with equal
+`shared_inputs_sha256` classified the same articles under the same
+ontology and thresholds and may be compared directly.
+
+Engineering runs may set `allow_dirty_git: true`; official runs require
+a clean tree. Configuration may be overridden on the command line
+(`--set a.b=value`, `--output-dir`); overrides pass the same strict
+validation and affect identity exactly as editing the file would.
 
 ### 0.7 Result rows
 
@@ -99,6 +129,74 @@ repeat on every child row of the same call; aggregate them by
 `prediction_key`. Unvisited nodes are omitted (`SKIPPED_BY_ROUTING` is
 not materialized). Work shards live under `_work/`; the final
 `results/model=<m>/` keeps the latest attempt per article.
+
+### 0.8 Ontology v1.1 and the shared decision template
+
+`gsib_basel_ontology_v1.1.json` keeps v1.0's node IDs, hierarchy,
+names and types unchanged, and adds to every non-root node a plain
+`yes_no_question` and `criteria` (`true`/`false`), and further
+`excludes` for known hard boundaries. It is generated from
+`ontology/v1.1_additions.yaml` by `ontology/build_v1_1.py`; v1.0 is not
+modified.
+
+Motivation: live probes showed decision models differ sharply in
+sensitivity to question form. With v1.0's fields rendered as a long
+definition-plus-criteria block, Laya's scores were near-flat (about
+0.35 on every relevance child), while a concrete yes/no question
+separated the same cases (0.91 vs 0.001).
+
+The shared decision template is chosen on a synthetic development set
+(`dev/template_cases_v1.jsonl`; short constructed articles, none drawn
+from the Bloomberg corpus) by a pre-declared rule: the candidate with
+the highest minimum balanced accuracy at 0.5 across Jev, Laya and d1,
+ties broken by fewer tokens. Candidates: `boolean_v1`, `boolean_v2a`
+(question + criteria), `boolean_v2b` (+ exclusions line),
+`boolean_v2c` (question only). The selected template is frozen before
+any corpus run. Tooling: `scripts/template_check.py`.
+
+Observed on the draft ontology: Jev and d1 scored 0.95–0.99 on every
+candidate; Laya 0.65–0.73, mostly through false positives on sibling
+categories and on negatively phrased questions. Jev returned slightly
+different probabilities for identical requests across repeated runs;
+Jev results are therefore reproducible in distribution, not bit for
+bit.
+
+### 0.9 GLiClass representation
+
+GLiClass is a uni-encoder (DeBERTa-v3-large) whose labels and article
+share one 512-token window, labels first. Ontology v1.1 adds a short
+plain-language `label` (at most about 8 words) to every node for this
+purpose. The label template is chosen on the same synthetic dev set by
+the highest balanced accuracy at 0.5 (`scripts/label_check.py`):
+
+| template | label text | balanced accuracy |
+|---|---|---|
+| `label_v1` | `{name}: {definition}` | 0.52 |
+| `label_name` | `{name}` | 0.67 |
+| `label_v2` | `{label}` | 0.73 |
+
+`label_v1`, the format originally planned, was near chance: the model
+scored the "Neither / Out of Scope" child at about 0.99 for every
+article. `label_v2` is selected. GLiClass receives less ontology
+information than the decision models (no definitions, criteria or
+exclusions), never more (§18). The article is truncated from the end to
+fit after the labels; each call records `model_submitted_tokens` and
+`model_truncated`.
+
+Scores are the model's independent sigmoid outputs for every label (no
+pipeline threshold); traversal applies the shared thresholds. The full
+corpus runs on a Colab T4 in `float16`; engineering runs on Apple MPS
+use `float32`. dtype is material, so these are separate run identities.
+
+### 0.10 Intermediate run and freeze rule
+
+Before full-corpus execution, every model runs on the first 1,000
+canonical articles by `article_id` (content hashes, so effectively a
+deterministic random sample). The ontology, templates and thresholds
+are frozen before that run. Afterwards only engineering changes are
+made (bugs, rate limits, concurrency). Any semantic change prompted by
+the intermediate run is recorded as informed by that sample and yields
+new run identities.
 
 ## 1. Purpose
 

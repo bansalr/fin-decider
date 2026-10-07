@@ -15,6 +15,10 @@ def make_adapter(model_key: str, cfg: ModelCfg) -> ClassificationAdapter:
         return LayaAdapter(model_key, cfg)
     if cfg.adapter == "d1":
         return D1Adapter(model_key, cfg)
+    if cfg.adapter == "gliclass":
+        from .gliclass import GLiClassAdapter
+
+        return GLiClassAdapter(model_key, cfg)
     if cfg.adapter == "fake":
         return FakeAdapter(model_key)
     raise ValueError(f"unknown adapter {cfg.adapter!r}")

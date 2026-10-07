@@ -53,6 +53,8 @@ class NodeDecision:
     cost_usd: float | None = None
     attempts: int = 1
     generation_id: str | None = None
+    model_truncated: bool | None = None  # local encoders: article cut to fit the model window
+    model_submitted_tokens: int | None = None
     raw: dict[str, Any] | None = field(default=None, repr=False)
 
 

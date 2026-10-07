@@ -15,25 +15,26 @@ from .config import check_credentials, load_config
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 CONFIG = typer.Option(Path("configs/classification.yaml"), "--config", "-c")
+SET = typer.Option(None, "--set", help="Config override, e.g. models.gliclass.device=mps (repeatable)")
 
 
-def _setup(config: Path):
+def _setup(config: Path, overrides: Optional[list[str]] = None):
     load_dotenv(override=False)
-    return load_config(config)
+    return load_config(config, overrides)
 
 
 @app.command()
-def validate(config: Path = CONFIG, check_dataset: bool = typer.Option(True)) -> None:
+def validate(config: Path = CONFIG, check_dataset: bool = typer.Option(True), overrides: Optional[list[str]] = SET) -> None:
     """Validate config, ontology, templates, dataset hash, and credentials."""
     from .dataset import verify
     from .ontology import load_ontology
     from .templates import load_template
 
-    cfg = _setup(config)
+    cfg = _setup(config, overrides)
     onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
     typer.echo(f"ontology ok: {onto.id} v{onto.version}, {len(onto.nodes)} nodes")
     for name, t in cfg.templates.items():
-        load_template(t.path, t.sha256)
+        load_template(t.path, t.sha256, t.kind).check_ontology(onto)
         typer.echo(f"template ok: {name}")
     if check_dataset:
         path = Path(cfg.dataset.local_dir) / cfg.dataset.file
@@ -74,7 +75,7 @@ def probe(config: Path = CONFIG, model: str = typer.Option(..., "--model", "-m")
     mcfg = cfg.models[model]
     check_credentials(cfg, [model])
     onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
-    tmpl = load_template(cfg.templates[mcfg.template].path, cfg.templates[mcfg.template].sha256)
+    tmpl = load_template(cfg.templates[mcfg.template].path, cfg.templates[mcfg.template].sha256, cfg.templates[mcfg.template].kind)
     text = ("Goldman Sachs and JPMorgan led a $5 billion bond sale for Oracle, and JPMorgan provided a "
             "$2 billion bridge loan to fund the acquisition.")
     art = ArticleInput("probe", text, "probe", len(text), len(text), False, "head")
@@ -103,18 +104,23 @@ def run(
     dry_run: bool = typer.Option(False, "--dry-run", help="Use the offline fake adapter; no network"),
     max_cost_usd: Optional[float] = typer.Option(None, "--max-cost-usd"),
     progress_every: int = typer.Option(500, "--progress-every"),
+    output_dir: Optional[Path] = typer.Option(None, "--output-dir", help="Results location (not part of run identity)"),
+    overrides: Optional[list[str]] = SET,
 ) -> None:
     """Classify the canonical corpus (or the first N articles) with the selected models."""
     from .adapters.fake import FakeAdapter
     from .runner import prepare_run, run_model
 
-    cfg = _setup(config)
+    sets = list(overrides or [])
+    if output_dir is not None:
+        sets.append(f"output.directory={output_dir}")
+    cfg = _setup(config, sets)
     models = model or [m for m, c in cfg.models.items() if c.enabled]
-    rc = prepare_run(cfg, limit=limit)
-    if dry_run:
-        rc.run_dir = rc.run_dir.with_name(rc.run_dir.name + "_dryrun")
-    typer.echo(f"run_id {rc.run_id} -> {rc.run_dir}")
     for m in models:
+        rc = prepare_run(cfg, model=m, limit=limit)
+        if dry_run:
+            rc.run_dir = rc.run_dir.with_name(rc.run_dir.name + "_dryrun")
+        typer.echo(f"{m}: run_id {rc.run_id} -> {rc.run_dir}")
         adapter = FakeAdapter(m) if dry_run else None
         stats = asyncio.run(run_model(rc, m, resume=resume, max_cost_usd=max_cost_usd, adapter=adapter,
                                       progress_every=progress_every))

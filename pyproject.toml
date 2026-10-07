@@ -15,6 +15,9 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.optional-dependencies]
+gliclass = ["gliclass==0.1.20", "torch>=2.4", "transformers>=5.0"]
+
 [project.scripts]
 classify = "classifier.cli:main"
 

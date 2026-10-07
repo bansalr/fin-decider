@@ -34,6 +34,13 @@ class OntologyNode:
     parent: str | None
     children: tuple[str, ...]
     basel: Any = None
+    yes_no_question: str | None = None  # v1.1+
+    label: str | None = None  # v1.1+: short plain phrase for encoder classifiers
+    criteria: tuple[tuple[str, str], ...] = ()  # v1.1+: (("false", ...), ("true", ...))
+
+    @property
+    def criteria_dict(self) -> dict[str, str]:
+        return dict(self.criteria)
 
     @property
     def is_leaf(self) -> bool:
@@ -41,7 +48,7 @@ class OntologyNode:
 
     def semantic_ir(self) -> dict[str, Any]:
         """The shared representation every adapter receives (spec §18)."""
-        return {
+        ir = {
             "id": self.id,
             "name": self.name,
             "definition": self.definition,
@@ -49,6 +56,13 @@ class OntologyNode:
             "excludes": list(self.excludes),
             "synonyms": list(self.synonyms),
         }
+        if self.yes_no_question is not None:
+            ir["yes_no_question"] = self.yes_no_question
+        if self.label is not None:
+            ir["label"] = self.label
+        if self.criteria:
+            ir["criteria"] = self.criteria_dict
+        return ir
 
 
 @dataclass
@@ -121,6 +135,9 @@ def build_ontology(raw: dict[str, Any], digest: str) -> Ontology:
             parent=spec.get("parent"),
             children=tuple(spec.get("children", [])),
             basel=spec.get("basel"),
+            yes_no_question=spec.get("yes_no_question"),
+            label=spec.get("label"),
+            criteria=tuple(sorted((spec.get("criteria") or {}).items())),
         )
 
     onto = Ontology(
@@ -148,6 +165,8 @@ def validate(onto: Ontology) -> None:
                 raise OntologyError(f"{nid}: child '{c}' does not exist")
             if nodes[c].parent != nid:
                 raise OntologyError(f"{c}: parent is '{nodes[c].parent}', but listed as child of '{nid}'")
+        if node.criteria and set(node.criteria_dict) != {"true", "false"}:
+            raise OntologyError(f"{nid}: criteria must have exactly 'true' and 'false'")
         if node.is_leaf and node.children:
             raise OntologyError(f"{nid}: leaf has children")
         if not node.is_leaf:

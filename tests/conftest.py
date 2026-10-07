@@ -26,7 +26,7 @@ def cfg():
 @pytest.fixture
 def template(cfg):
     t = cfg.templates["boolean_v1"]
-    return load_template(ROOT / t.path, t.sha256)
+    return load_template(ROOT / t.path, t.sha256, t.kind)
 
 
 def node(name, type_, parent=None, children=(), question="Q?"):

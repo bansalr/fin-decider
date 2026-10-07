@@ -56,6 +56,8 @@ SCHEMA: dict[str, pl.DataType] = {
     "model_returned": pl.String,
     "routing_provider": pl.String,
     "generation_id": pl.String,
+    "model_truncated": pl.Boolean,
+    "model_submitted_tokens": pl.Int64,
 }
 
 
@@ -129,6 +131,8 @@ def load_cache(run_dir: Path, model: str) -> tuple[dict[str, NodeDecision], set[
             cost_usd=first["provider_cost_usd"],
             attempts=first["attempts"] or 1,
             generation_id=first["generation_id"],
+            model_truncated=first["model_truncated"],
+            model_submitted_tokens=first["model_submitted_tokens"],
         )
     return cache, complete, attempts
 
