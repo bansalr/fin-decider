@@ -35,16 +35,33 @@ def test_v2_templates_need_v1_1_fields(cfg, repo_root):
     t.check_ontology(v11)
     q = t.render(v11.node("relevance"), v11.node("relevance.gsib_activity"))
     assert q["instructions"] == v11.node("relevance.gsib_activity").yes_no_question
+    assert "Not:" not in q["instructions"]
     assert q["criteria"]["false"] == v11.node("relevance.gsib_activity").criteria_dict["false"]
 
 
-def test_v1_1_graph_identical_to_v1_0(repo_root):
+def test_v1_1_maps_every_v1_0_node(repo_root):
+    import json
+
     a = load_ontology(repo_root / "gsib_basel_ontology_v1.0.json")
     b = load_ontology(repo_root / "gsib_basel_ontology_v1.1.json")
-    shape = lambda o: {k: (v.parent, v.children, v.type, v.name) for k, v in o.nodes.items()}  # noqa: E731
-    assert shape(a) == shape(b)
+    raw = json.loads((repo_root / "gsib_basel_ontology_v1.1.json").read_text())["nodes"]
+    covered = [m for n in raw.values() for m in n["merged_from"]]
+    assert set(covered) == set(a.nodes)
+    assert len(b.nodes) < len(a.nodes) and b.roots == a.roots
     assert all(n.yes_no_question and n.criteria for n in b.nodes.values() if n.parent)
-    assert a.node_hash("relevance") != b.node_hash("relevance")
+    # Unchanged top of the hierarchy keeps its IDs.
+    assert set(a.node("relevance").children) == set(b.node("relevance").children)
+    assert set(a.node("relevance.gsib_activity").children) == set(b.node("relevance.gsib_activity").children)
+
+
+def test_dev_cases_match_ontology_versions(repo_root):
+    from report.devset import CASES_BY_ONTOLOGY, load_cases
+
+    for version, path in CASES_BY_ONTOLOGY.items():
+        onto = load_ontology(repo_root / f"gsib_basel_ontology_v{version.rsplit('.', 1)[0]}.json")
+        assert onto.version == version
+        for c in load_cases(path):
+            assert set(c["expect"]) <= set(onto.nodes), (version, c["id"])
 
 
 def test_unknown_placeholder_rejected(tmp_path):

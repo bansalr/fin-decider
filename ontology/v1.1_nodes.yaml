@@ -1,0 +1,1175 @@
+ontology:
+  id: gsib_basel_markets_lending
+  version: 1.1.0
+  title: Basel-derived G-SIB Markets and Lending Activity Ontology
+  description: 'v1.1: consolidated (rare and overlapping nodes merged) with per-node yes/no questions and criteria.'
+  roots:
+  - relevance
+  changes_from: 1.0.0
+nodes:
+  relevance:
+    name: Relevance
+    type: multi_label
+    parent: null
+    question: Which relevance categories apply to this article?
+    definition: Routes articles between material G-SIB activity, financial-market context without such activity,
+      and out-of-scope content.
+    includes: []
+    excludes: []
+    synonyms: []
+    merged_from:
+    - relevance
+    _term_hits_with_bank: null
+  relevance.gsib_activity:
+    name: G-SIB Activity
+    type: multi_label
+    parent: relevance
+    question: Which G-SIB business arms are materially implicated by the article?
+    definition: Material Markets, Lending, or Treasury/ALM activity performed by a large universal bank.
+    includes:
+    - bank lending
+    - market making
+    - trading
+    - securities financing
+    - derivatives
+    - underwriting
+    - syndication
+    - balance-sheet management
+    excludes:
+    - asset-price movement without banking activity
+    - issuer news without banking activity
+    - central-bank policy decision without dealer activity
+    - bank share-price move only
+    synonyms:
+    - banking activity
+    - dealer activity
+    yes_no_question: Does the article describe a bank, dealer, or lender doing business, such as lending, underwriting,
+      trading, market making, financing clients, or managing its own funding?
+    criteria:
+      'true': A bank or dealer's lending, deal, trade, client financing, or funding activity is reported, or a bank
+        business line's results or strategy are discussed.
+      'false': Only prices, economic data, policy, or non-bank company news, with no bank or dealer activity described.
+    merged_from:
+    - relevance.gsib_activity
+    _term_hits_with_bank: null
+  relevance.market_context_only:
+    name: Market Context Only
+    type: leaf
+    parent: relevance
+    definition: Financial-market, issuer, macroeconomic, policy, or asset-price context without a material G-SIB
+      activity.
+    includes:
+    - asset-price movement
+    - macroeconomic release
+    - central-bank policy
+    - issuer earnings
+    excludes:
+    - bank financing
+    - dealer trading
+    - underwriting
+    - derivatives transaction
+    - securities financing
+    synonyms: []
+    yes_no_question: Is the article about financial markets, the economy, policy, or companies, without describing
+      any bank or dealer lending, underwriting, trading for clients, or financing?
+    criteria:
+      'true': Market moves, prices, economic data, central-bank or government policy, or company news, with no bank
+        or dealer business activity described.
+      'false': A bank or dealer activity is described, or the article is not about markets or the economy at all.
+    merged_from:
+    - relevance.market_context_only
+    _term_hits_with_bank: null
+  relevance.neither:
+    name: Neither / Out of Scope
+    type: leaf
+    parent: relevance
+    definition: Content neither materially about G-SIB business activity nor relevant financial-market context.
+    includes:
+    - unrelated general news
+    excludes:
+    - banking activity
+    - financial-market context
+    synonyms:
+    - out of scope
+    yes_no_question: Is the article unrelated to financial markets, the economy, and banking?
+    criteria:
+      'true': General news such as sport, culture, crime, weather, or non-financial human-interest stories.
+      'false': Any financial-market, economic, policy, company, or banking content is discussed.
+    merged_from:
+    - relevance.neither
+    _term_hits_with_bank: null
+  business.markets:
+    name: Markets
+    type: multi_label
+    parent: relevance.gsib_activity
+    question: Which Markets business families are materially described or implicated?
+    definition: Client-facing trading, market making, securities and derivatives activity, securities financing,
+      structured products, underwriting, and syndication.
+    includes:
+    - market making
+    - trading
+    - securities financing
+    - derivatives
+    - underwriting
+    - syndication
+    excludes:
+    - ordinary corporate lending
+    - consumer lending
+    - residential mortgage origination
+    - asset-price movement without dealer activity
+    synonyms:
+    - global markets
+    - sales and trading
+    yes_no_question: Does the article describe a bank or dealer trading, making markets, underwriting or syndicating
+      deals, providing derivatives, or financing clients' securities positions?
+    criteria:
+      'true': Sales and trading, market making, derivatives, securities financing, structured products, or underwriting
+        activity by a bank or dealer is reported.
+      'false': Only asset prices or issuer news, or bank lending that is held as a loan with no markets activity.
+    merged_from:
+    - business.markets
+    _term_hits_with_bank: null
+  business.lending:
+    name: Lending
+    type: multi_label
+    parent: relevance.gsib_activity
+    question: Which Lending business families are materially described or implicated?
+    definition: Provision, commitment, arrangement, or management of loans and credit facilities.
+    includes:
+    - loans
+    - revolving credit
+    - term lending
+    - acquisition finance
+    - specialised lending
+    - trade finance
+    - mortgages
+    - consumer credit
+    excludes:
+    - securities trading without lending
+    - repo and securities lending
+    - bond issuance without a loan
+    synonyms:
+    - bank lending
+    - credit
+    yes_no_question: Does the article describe a bank or lender providing, committing, arranging, or managing a
+      loan or credit facility?
+    criteria:
+      'true': A loan, revolver, credit line, mortgage, trade facility, or other credit extension by a bank or lender
+        is reported.
+      'false': Only securities trading, underwriting of bonds or shares, or borrowing that is not from a bank or
+        lender.
+    merged_from:
+    - business.lending
+    _term_hits_with_bank: null
+  business.treasury_alm:
+    name: Treasury / ALM
+    type: multi_label
+    parent: relevance.gsib_activity
+    question: Which Treasury or asset-liability-management activities are materially described?
+    definition: Bank balance-sheet funding, liquidity management, structural interest-rate risk, and structural
+      FX.
+    includes:
+    - bank funding
+    - liquidity buffer
+    - structural rates
+    - structural FX
+    excludes:
+    - client-facing rates trading
+    - client-facing FX trading
+    - central-bank liquidity operations described only from the central bank's side
+    synonyms:
+    - ALM
+    - bank treasury
+    yes_no_question: Does the article describe a bank managing its own funding, liquidity, or balance-sheet interest-rate
+      or currency risk?
+    criteria:
+      'true': A bank's own funding raising, liquidity buffers, deposit or wholesale funding strategy, or structural
+        rate/FX hedging is reported.
+      'false': Client trading, client financing, or central-bank policy without a bank's own balance-sheet management.
+    merged_from:
+    - business.treasury_alm
+    _term_hits_with_bank: null
+  treasury.funding_liquidity:
+    name: Funding & Liquidity
+    type: leaf
+    parent: business.treasury_alm
+    definition: A bank's own wholesale, secured, or bond funding, and management of its liquidity buffer and liquid-asset
+      portfolio.
+    includes:
+    - wholesale funding
+    - secured funding
+    - bank's own bond issuance
+    - covered bonds
+    - liquidity buffer
+    - HQLA
+    - LCR
+    excludes:
+    - client repo financing
+    - bank underwriting a client's bond
+    - general market liquidity conditions
+    synonyms: []
+    yes_no_question: Does the article describe a bank raising funding for its own balance sheet or managing its
+      own liquidity, for example issuing its own bonds or building its liquidity buffer?
+    criteria:
+      'true': A bank's own funding transaction or plan, liquidity buffer, LCR, or HQLA position is reported.
+      'false': The bank finances a client, or only funding markets or central-bank liquidity in general are discussed.
+    merged_from:
+    - treasury.funding
+    - treasury.liquidity
+    _term_hits_with_bank: 3577
+  treasury.structural_risk:
+    name: Structural Rate & FX Risk
+    type: leaf
+    parent: business.treasury_alm
+    definition: Management or hedging of interest-rate and currency risk arising from the bank's own balance sheet
+      (banking book and capital).
+    includes:
+    - IRRBB
+    - net-interest-income hedging
+    - structural rates hedging
+    - structural FX hedging
+    excludes:
+    - client rates trading
+    - client FX trading
+    - interest-rate or currency move without bank hedging
+    synonyms:
+    - IRRBB
+    - ALM hedging
+    yes_no_question: Does the article describe a bank managing or hedging the interest-rate or currency risk on
+      its own balance sheet?
+    criteria:
+      'true': A bank's banking-book rate exposure, net-interest-income hedging, or structural FX or capital hedging
+        is reported.
+      'false': Rates or FX trading for clients, or general interest-rate and currency moves.
+    merged_from:
+    - treasury.structural_rates
+    - treasury.structural_fx
+    _term_hits_with_bank: 744
+  markets.macro:
+    name: Macro Markets
+    type: multi_label
+    parent: business.markets
+    question: Which Macro Markets activities are materially described?
+    definition: Client-facing trading or market making in rates, FX, commodities, inflation, or emerging-markets
+      macro products.
+    includes: []
+    excludes:
+    - government bond yield move without dealer activity
+    - currency move without dealer activity
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer trading or making markets in government bonds, interest-rate
+      products, currencies, commodities, inflation products, or emerging-market macro instruments?
+    criteria:
+      'true': Dealer or bank trading, market making, or client flows in rates, FX, commodities, inflation, or EM
+        macro products are reported.
+      'false': Only price or yield moves, economic data, or policy decisions, with no dealer or bank trading activity.
+    merged_from:
+    - markets.macro
+    _term_hits_with_bank: null
+  markets.macro.rates:
+    name: Rates
+    type: leaf
+    parent: markets.macro
+    definition: Trading or market making in government bonds, interest-rate swaps, swaptions, futures, options,
+      inflation-linked products, or emerging-market local rates.
+    includes:
+    - government bonds
+    - interest-rate swaps
+    - swaptions
+    - rates futures
+    - inflation swaps
+    - linkers
+    - EM local-currency bonds
+    excludes:
+    - corporate credit
+    - structural IRRBB
+    - yield move without dealer activity
+    - central-bank rate decision
+    synonyms:
+    - interest rates
+    yes_no_question: Does the article describe a bank or dealer trading or making markets in government bonds, interest-rate
+      swaps, inflation-linked bonds, or other rates products, including in emerging markets?
+    criteria:
+      'true': Dealer activity in rates or inflation products is reported, such as primary-dealer bidding, swap trading,
+        or client rates flows.
+      'false': Only yield, inflation, or rate moves, economic data, central-bank decisions, or a bank's own balance-sheet
+        hedging.
+    merged_from:
+    - markets.macro.rates
+    - markets.macro.inflation
+    - markets.macro.emerging_markets
+    _term_hits_with_bank: 9123
+  markets.macro.fx:
+    name: Foreign Exchange
+    type: leaf
+    parent: markets.macro
+    definition: Client-facing trading or market making in spot FX, forwards, FX swaps, options, or related currency
+      products, including emerging-market currencies.
+    includes:
+    - spot FX
+    - FX forwards
+    - FX swaps
+    - currency options
+    - EM FX
+    excludes:
+    - structural FX
+    - exchange-rate move without dealer activity
+    synonyms:
+    - FX
+    - currencies
+    yes_no_question: Does the article describe a bank or dealer trading or making markets in currencies for clients,
+      including emerging-market currencies, FX forwards, swaps, or options?
+    criteria:
+      'true': Dealer FX trading, client currency flows, or FX derivatives activity by a bank is reported.
+      'false': Only exchange-rate moves or currency policy, or a bank hedging its own structural FX.
+    merged_from:
+    - markets.macro.fx
+    - markets.macro.emerging_markets
+    _term_hits_with_bank: 3392
+  markets.macro.commodities:
+    name: Commodities
+    type: leaf
+    parent: markets.macro
+    definition: Trading, market making, or derivatives activity in energy, metals, agricultural, or other commodities.
+    includes:
+    - commodity futures
+    - commodity swaps
+    - energy trading
+    - metals trading
+    excludes:
+    - commodity finance lending
+    - commodity price move without dealer activity
+    synonyms:
+    - commodity trading
+    yes_no_question: Does the article describe a bank or dealer trading commodities or providing commodity derivatives
+      such as futures or swaps?
+    criteria:
+      'true': Bank or dealer commodity trading, hedging for clients, or commodity derivatives activity is reported.
+      'false': Only commodity prices, supply, or production news, or a bank lending against commodities.
+    merged_from:
+    - markets.macro.commodities
+    _term_hits_with_bank: 676
+  markets.credit:
+    name: Credit Markets
+    type: multi_label
+    parent: business.markets
+    question: Which Credit Markets activities are materially described?
+    definition: Trading, market making, or derivatives activity in corporate or structured credit.
+    includes: []
+    excludes:
+    - credit-rating action only
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer trading, making markets in, or structuring corporate
+      bonds, credit derivatives, or structured credit?
+    criteria:
+      'true': Dealer or bank activity in corporate credit, CDS, credit indices, or tranched credit is reported.
+      'false': Only credit spreads or ratings news, or a company's bond issuance with no dealer trading described.
+    merged_from:
+    - markets.credit
+    _term_hits_with_bank: null
+  markets.credit.cash:
+    name: Corporate Bond Trading
+    type: leaf
+    parent: markets.credit
+    definition: Trading or market making in investment-grade, high-yield, or distressed corporate credit.
+    includes:
+    - investment-grade bonds
+    - high-yield bonds
+    - distressed debt
+    excludes:
+    - corporate lending
+    - leveraged loan origination
+    - credit-rating action only
+    - bond issuance without secondary trading
+    - default news without dealer trading
+    synonyms:
+    - cash credit
+    - IG credit
+    - HY credit
+    yes_no_question: Does the article describe a bank or dealer trading or making markets in corporate bonds, including
+      investment-grade, high-yield (junk), or distressed debt?
+    criteria:
+      'true': Dealer trading, inventory, or client flows in corporate bonds or distressed debt are reported.
+      'false': Only spreads, ratings, defaults, or new bond issuance without secondary trading, or loans.
+    merged_from:
+    - markets.credit.investment_grade
+    - markets.credit.high_yield_distressed
+    _term_hits_with_bank: 4647
+  markets.credit.credit_derivatives:
+    name: Credit Derivatives & Structured Credit
+    type: leaf
+    parent: markets.credit
+    definition: Trading or structuring CDS, credit indices, tranches, or bespoke and synthetic structured credit.
+    includes:
+    - CDS
+    - CDX
+    - iTraxx
+    - credit index
+    - bespoke tranches
+    - synthetic CDO
+    excludes:
+    - cash corporate bonds
+    - CDS level cited only as a risk indicator
+    synonyms:
+    - CDS trading
+    yes_no_question: Does the article describe a bank or dealer trading or structuring credit default swaps, credit
+      indices, or tranched credit products such as synthetic CDOs?
+    criteria:
+      'true': Dealer activity in CDS, CDX, iTraxx, or tranched or synthetic credit is reported.
+      'false': CDS levels cited only as a risk indicator, cash bond trading, or CLO/CDO securitisation of loans.
+    merged_from:
+    - markets.credit.credit_derivatives
+    - markets.credit.structured_credit
+    _term_hits_with_bank: 8458
+  markets.equities:
+    name: Equities
+    type: multi_label
+    parent: business.markets
+    question: Which Equities activities are materially described?
+    definition: Client-facing equity trading, market making, derivatives, or structured-product activity.
+    includes: []
+    excludes:
+    - share-price move only
+    - issuer earnings
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer executing, trading, making markets in, or structuring
+      stocks, equity derivatives, or equity-linked products?
+    criteria:
+      'true': Dealer or bank equity trading, execution, derivatives, or structured-equity activity is reported.
+      'false': Only share-price moves, earnings, or stock-market commentary with no dealer activity.
+    merged_from:
+    - markets.equities
+    _term_hits_with_bank: null
+  markets.equities.cash:
+    name: Cash Equities
+    type: leaf
+    parent: markets.equities
+    definition: Client-facing execution, trading, or market making in cash equities.
+    includes:
+    - cash equities
+    - equity execution
+    excludes:
+    - generic share-price movement
+    - equity underwriting
+    - stock-index move
+    synonyms: []
+    yes_no_question: Does the article describe a bank or broker executing or trading stocks for clients or making
+      markets in shares, such as block trades?
+    criteria:
+      'true': A bank or broker's cash-equity execution, block trade, or market-making activity is reported.
+      'false': Only share-price moves, index levels, or equity underwriting.
+    merged_from:
+    - markets.equities.cash
+    _term_hits_with_bank: 958
+  markets.equities.derivatives:
+    name: Equity Derivatives & Structured Equity
+    type: leaf
+    parent: markets.equities
+    definition: Trading or structuring equity options, futures, swaps, index derivatives, or equity-linked structured
+      products.
+    includes:
+    - equity options
+    - equity swaps
+    - index options
+    - equity-linked notes
+    - structured equity products
+    excludes:
+    - cash equity execution
+    - equity underwriting
+    - implied volatility cited only as a market indicator
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer trading or structuring equity options, equity swaps,
+      index derivatives, or equity-linked structured notes?
+    criteria:
+      'true': Dealer equity-derivatives activity or a bank's structured equity products are reported.
+      'false': Option prices or volatility cited only as a market indicator, cash-equity trading, or share offerings.
+    merged_from:
+    - markets.equities.derivatives
+    - markets.equities.structured
+    _term_hits_with_bank: 1339
+  markets.securitised:
+    name: Securitised Products
+    type: multi_label
+    parent: business.markets
+    question: Which securitised-products activities are materially described?
+    definition: Trading, structuring, warehousing, or distribution of asset-backed and mortgage-backed products.
+    includes: []
+    excludes:
+    - loan origination without securitisation
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer creating, warehousing, trading, or selling mortgage-backed,
+      asset-backed, CLO, or CDO securities?
+    criteria:
+      'true': Securitisation deals, dealer trading, or warehousing of RMBS, CMBS, ABS, CLOs, or CDOs is reported.
+      'false': Only the underlying loans (mortgages, car loans) with no securitisation activity.
+    merged_from:
+    - markets.securitised
+    _term_hits_with_bank: null
+  markets.securitised.mbs:
+    name: Mortgage-Backed Securities
+    type: leaf
+    parent: markets.securitised
+    definition: Residential and commercial mortgage-backed securities activity.
+    includes:
+    - RMBS
+    - residential MBS
+    - agency MBS
+    - CMBS
+    excludes:
+    - residential mortgage origination
+    - direct CRE lending
+    - house-price data
+    - commercial property prices
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer creating, trading, or selling residential or commercial
+      mortgage-backed securities?
+    criteria:
+      'true': RMBS or CMBS issuance, structuring, trading, or warehousing by a bank or dealer is reported.
+      'false': Mortgage lending, house or property prices, or property deals without mortgage-backed securities
+        activity.
+    merged_from:
+    - markets.securitised.rmbs
+    - markets.securitised.cmbs
+    _term_hits_with_bank: 3425
+  markets.securitised.abs:
+    name: ABS
+    type: leaf
+    parent: markets.securitised
+    definition: Asset-backed securities activity other than RMBS/CMBS.
+    includes:
+    - ABS
+    - auto ABS
+    - credit-card ABS
+    excludes:
+    - direct consumer lending
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer creating, trading, or selling asset-backed securities
+      such as auto-loan or credit-card ABS?
+    criteria:
+      'true': ABS issuance, structuring, trading, or warehousing by a bank or dealer is reported.
+      'false': Consumer loans themselves, or RMBS/CMBS.
+    merged_from:
+    - markets.securitised.abs
+    _term_hits_with_bank: 676
+  markets.securitised.clo_cdo:
+    name: CLO / CDO
+    type: leaf
+    parent: markets.securitised
+    definition: Collateralised loan or debt obligation activity.
+    includes:
+    - CLO
+    - CDO
+    excludes:
+    - direct leveraged lending
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer creating, warehousing, trading, or selling collateralised
+      loan obligations or CDOs?
+    criteria:
+      'true': CLO or CDO issuance, warehousing, structuring, or trading by a bank or dealer is reported.
+      'false': Leveraged loans themselves without a CLO or CDO.
+    merged_from:
+    - markets.securitised.clo_cdo
+    _term_hits_with_bank: 1070
+  markets.financing:
+    name: Markets Financing
+    type: multi_label
+    parent: business.markets
+    question: Which client securities-financing or prime-finance activities are materially described?
+    definition: Client financing through securities finance, prime brokerage, margin, or synthetic structures.
+    includes: []
+    excludes:
+    - central-bank repo operations
+    - bank treasury funding
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer financing clients' securities positions through
+      repo, securities lending, prime brokerage, margin loans, or total-return swaps?
+    criteria:
+      'true': Client securities-financing activity by a bank or dealer is reported.
+      'false': Central-bank repo policy, a bank's own funding, or hedge-fund news without dealer financing.
+    merged_from:
+    - markets.financing
+    _term_hits_with_bank: null
+  markets.financing.repo:
+    name: Repo / Reverse Repo
+    type: leaf
+    parent: markets.financing
+    definition: Client securities financing through sale/repurchase or purchase/resale of securities against cash.
+    includes:
+    - repo
+    - reverse repo
+    - repurchase agreement
+    excludes:
+    - central-bank repo-rate policy without dealer financing
+    - bank treasury funding
+    - Federal Reserve reverse repo facility usage
+    synonyms:
+    - repurchase agreements
+    yes_no_question: Does the article describe a bank or dealer providing repo or reverse-repo financing to clients
+      against securities?
+    criteria:
+      'true': Dealer repo or reverse-repo financing for clients, or repo desk activity, is reported.
+      'false': Central-bank repo rates or operations, or a bank using repo for its own funding.
+    merged_from:
+    - markets.financing.repo
+    _term_hits_with_bank: 2580
+  markets.financing.prime_services:
+    name: Prime Services & Securities Finance
+    type: leaf
+    parent: markets.financing
+    definition: Prime brokerage, margin and securities-based lending, securities lending, and synthetic (total-return-swap)
+      financing of client positions.
+    includes:
+    - prime brokerage financing
+    - hedge-fund financing
+    - margin loans
+    - securities lending
+    - stock borrow
+    - TRS financing
+    excludes:
+    - generic hedge-fund news
+    - fund subscription lending
+    - short-interest data only
+    - exchange margin requirement change
+    - consumer unsecured lending
+    synonyms:
+    - prime finance
+    - prime services
+    yes_no_question: Does the article describe a bank providing prime brokerage, margin loans, securities lending,
+      or total-return-swap financing to hedge funds or other investors?
+    criteria:
+      'true': A bank's prime brokerage business, client margin or securities-backed lending, securities lending,
+        or synthetic financing is reported.
+      'false': Hedge-fund performance news, short-interest data, or exchange margin rules without a bank financing
+        clients.
+    merged_from:
+    - markets.financing.securities_lending
+    - markets.financing.prime
+    - markets.financing.margin
+    - markets.financing.synthetic
+    _term_hits_with_bank: 677
+  markets.derivatives_xva:
+    name: Derivatives / XVA
+    type: leaf
+    parent: business.markets
+    definition: Cross-asset OTC or cleared derivatives, client clearing, or XVA/CVA activity.
+    includes:
+    - OTC swaps
+    - bilateral derivatives
+    - cleared swaps
+    - client clearing
+    - futures clearing
+    - CVA
+    - XVA
+    - FVA
+    excludes:
+    - derivatives regulation without bank activity
+    - proprietary clearing with no client service
+    synonyms: []
+    yes_no_question: Does the article describe a bank or dealer providing OTC or cleared derivatives, clearing services
+      for clients, or managing derivative valuation adjustments such as CVA?
+    criteria:
+      'true': Dealer derivatives activity, client clearing, CCP clearing by a bank, or XVA/CVA management is reported.
+      'false': Exchange or regulator news without bank derivatives activity, or derivatives only named in passing.
+    merged_from:
+    - markets.derivatives_xva
+    - markets.derivatives.otc
+    - markets.derivatives.cleared
+    - markets.derivatives.client_clearing
+    - markets.derivatives.xva
+    _term_hits_with_bank: 2028
+  markets.underwriting:
+    name: Underwriting / Syndication
+    type: multi_label
+    parent: business.markets
+    question: Which underwriting or syndication activities are materially described?
+    definition: Origination for distribution, underwriting, syndication, bookrunning, or placement of debt, equity,
+      or syndicated loans.
+    includes: []
+    excludes:
+    - issuance with no bank role described
+    synonyms: []
+    yes_no_question: Does the article describe banks underwriting, arranging, or running the books on a bond sale,
+      share offering, IPO, or syndicated loan?
+    criteria:
+      'true': Banks are reported as underwriters, bookrunners, arrangers, or placement agents on a debt, equity,
+        or loan deal.
+      'false': The issuer raises money but no bank role is described, or only secondary-market trading.
+    merged_from:
+    - markets.underwriting
+    _term_hits_with_bank: null
+  markets.underwriting.dcm:
+    name: Debt Capital Markets Underwriting
+    type: leaf
+    parent: markets.underwriting
+    definition: Underwriting, bookrunning, structuring, or placement of bonds and debt issuance.
+    includes:
+    - bond underwriting
+    - DCM
+    - bookrunner
+    excludes:
+    - secondary bond trading
+    - bilateral lending
+    - bond sale with no bank role described
+    synonyms: []
+    yes_no_question: Does the article describe banks underwriting, arranging, or running the books on a bond sale?
+    criteria:
+      'true': Banks are named or described as underwriters, bookrunners, or arrangers of a bond or debt issue.
+      'false': A company sells bonds with no bank role described, or only secondary bond trading.
+    merged_from:
+    - markets.underwriting.dcm
+    _term_hits_with_bank: 725
+  markets.underwriting.ecm:
+    name: Equity Capital Markets Underwriting
+    type: leaf
+    parent: markets.underwriting
+    definition: Underwriting, bookrunning, structuring, or placement of equity or equity-linked issuance.
+    includes:
+    - IPO underwriting
+    - follow-on offering
+    - ECM
+    excludes:
+    - cash equity trading
+    - IPO with no bank role described
+    synonyms: []
+    yes_no_question: Does the article describe banks underwriting or running the books on an IPO, share sale, or
+      convertible bond offering?
+    criteria:
+      'true': Banks are named or described as underwriters, bookrunners, or placement agents on an equity or equity-linked
+        deal.
+      'false': IPO plans or share sales with no bank role described, or secondary stock trading.
+    merged_from:
+    - markets.underwriting.ecm
+    _term_hits_with_bank: 8514
+  markets.underwriting.loan_syndication:
+    name: Loan Syndication
+    type: leaf
+    parent: markets.underwriting
+    definition: Arrangement, syndication, distribution, or bookrunning of loans among lenders or investors.
+    includes:
+    - syndicated loan
+    - loan syndication
+    - arranger
+    excludes:
+    - bilateral retained loan
+    synonyms: []
+    yes_no_question: Does the article describe banks arranging or syndicating a loan across multiple lenders?
+    criteria:
+      'true': A syndicated loan, its arrangers or bookrunners, or loan distribution to lenders is reported.
+      'false': A single bank's bilateral loan, or a bond deal.
+    merged_from:
+    - markets.underwriting.loan_syndication
+    _term_hits_with_bank: 689
+  lending.corporate:
+    name: Corporate Lending
+    type: multi_label
+    parent: business.lending
+    question: Which general corporate-lending activities are materially described?
+    definition: General corporate loans and facilities not better classified elsewhere.
+    includes: []
+    excludes:
+    - corporate bond issuance
+    synonyms: []
+    yes_no_question: Does the article describe a bank lending to a company through a general-purpose loan, term
+      loan, or revolving credit facility?
+    criteria:
+      'true': A bank loan or credit facility to a company for general corporate purposes is reported.
+      'false': Leveraged buyout or acquisition financing, project or asset-specific financing, or company bond sales.
+    merged_from:
+    - lending.corporate
+    _term_hits_with_bank: null
+  lending.corporate.large_mid:
+    name: Large & Mid-Sized Corporate Lending
+    type: leaf
+    parent: lending.corporate
+    definition: General lending and facilities to large and middle-market corporate borrowers.
+    includes:
+    - large corporate revolver
+    - investment-grade corporate loan
+    - middle-market loans
+    - term loan
+    excludes:
+    - leveraged finance
+    - project finance
+    - SME lending
+    - corporate bond issuance
+    synonyms: []
+    yes_no_question: Does the article describe a bank lending to a large or mid-sized company through a general-purpose
+      loan, term loan, or revolving credit facility?
+    criteria:
+      'true': A loan or facility to a large or mid-sized company for general corporate purposes is reported.
+      'false': Leveraged, acquisition, or project financing, loans to small businesses, or company bond sales.
+    merged_from:
+    - lending.corporate.large
+    - lending.corporate.middle_market
+    _term_hits_with_bank: 2333
+  lending.corporate.sme:
+    name: SME Corporate Lending
+    type: leaf
+    parent: lending.corporate
+    definition: Corporate/commercial lending to small and medium-sized enterprises.
+    includes:
+    - SME loan
+    - small-business corporate credit
+    excludes:
+    - consumer personal lending
+    synonyms: []
+    yes_no_question: Does the article describe a bank lending to small or medium-sized businesses?
+    criteria:
+      'true': SME or small-business lending, including government-backed small-business loan schemes run through
+        banks, is reported.
+      'false': Personal loans to individuals, or lending to large companies.
+    merged_from:
+    - lending.corporate.sme
+    _term_hits_with_bank: 2094
+  lending.leveraged_sponsor:
+    name: Leveraged / Sponsor Finance
+    type: multi_label
+    parent: business.lending
+    question: Which leveraged or sponsor-finance activities are materially described?
+    definition: Leveraged lending, sponsor-backed credit, acquisition finance, or bridge finance.
+    includes: []
+    excludes:
+    - M&A deal with no financing described
+    synonyms: []
+    yes_no_question: Does the article describe banks providing leveraged loans, buyout financing, acquisition financing,
+      or bridge loans?
+    criteria:
+      'true': Leveraged lending, private-equity-sponsor financing, acquisition loans, or bridge financing by banks
+        is reported.
+      'false': An acquisition with no debt financing described, or high-yield bond trading.
+    merged_from:
+    - lending.leveraged_sponsor
+    _term_hits_with_bank: null
+  lending.leveraged_sponsor.leveraged_loan:
+    name: Leveraged Loan
+    type: leaf
+    parent: lending.leveraged_sponsor
+    definition: Leveraged lending to highly indebted or below-investment-grade borrowers.
+    includes:
+    - leveraged loan
+    - TLB
+    - term loan B
+    excludes:
+    - high-yield bond trading
+    synonyms: []
+    yes_no_question: Does the article describe banks providing leveraged loans to highly indebted or below-investment-grade
+      companies, such as term loan B?
+    criteria:
+      'true': Leveraged loans, term loan B, or a bank's leveraged-loan pipeline or exposure are reported.
+      'false': High-yield bond trading, or investment-grade corporate loans.
+    merged_from:
+    - lending.leveraged_sponsor.leveraged_loan
+    _term_hits_with_bank: 698
+  lending.leveraged_sponsor.acquisition:
+    name: Acquisition & Bridge Finance
+    type: leaf
+    parent: lending.leveraged_sponsor
+    definition: Debt financing, including bridge facilities, used to fund an acquisition, merger, or sponsor-backed
+      buyout until permanent financing is raised.
+    includes:
+    - acquisition loan
+    - M&A financing
+    - LBO financing
+    - bridge loan
+    - bridge facility
+    - bridge-to-bond
+    excludes:
+    - general corporate loan unrelated to acquisition
+    - ordinary revolving credit
+    - M&A deal with no financing described
+    synonyms: []
+    yes_no_question: Does the article describe banks providing loans, bridge loans, or committed financing to fund
+      an acquisition, merger, or buyout?
+    criteria:
+      'true': Acquisition loans, bridge loans or facilities, or committed financing for a merger or LBO are reported.
+      'false': An acquisition with no debt financing described, or general loans unrelated to a deal.
+    merged_from:
+    - lending.leveraged_sponsor.acquisition
+    - lending.leveraged_sponsor.bridge
+    _term_hits_with_bank: 1554
+  lending.specialised:
+    name: Specialised Lending
+    type: multi_label
+    parent: business.lending
+    question: Which specialised-lending categories are materially described?
+    definition: Project- or asset-specific lending whose repayment is closely tied to the financed project or object.
+    includes: []
+    excludes:
+    - project announcement without financing
+    synonyms: []
+    yes_no_question: Does the article describe a bank financing a specific project or physical asset, such as a
+      power plant, pipeline, aircraft, or ship, where repayment depends on that project or asset?
+    criteria:
+      'true': Project finance or asset/object finance (aircraft, ships, rail, equipment) by a lender is reported.
+      'false': General company loans, or project, asset, or commodity news without financing.
+    merged_from:
+    - lending.specialised
+    _term_hits_with_bank: null
+  lending.specialised.project_finance:
+    name: Project Finance
+    type: leaf
+    parent: lending.specialised
+    definition: Financing for a specific project where repayment depends primarily on project revenues, commonly
+      through a project SPV with non- or limited recourse.
+    includes:
+    - infrastructure finance
+    - power project finance
+    - project SPV
+    - non-recourse project debt
+    excludes:
+    - general corporate borrowing by infrastructure company
+    - project construction news without financing
+    synonyms: []
+    yes_no_question: Does the article describe lenders financing a specific project, such as a power plant, pipeline,
+      or infrastructure, repaid from the project's own revenues?
+    criteria:
+      'true': Project finance, non-recourse or limited-recourse project debt, or a project-company loan is reported.
+      'false': General corporate borrowing by an infrastructure or energy company, or project news without financing.
+    basel:
+      exposure_class: specialised_lending
+      code: PF
+    merged_from:
+    - lending.specialised.project_finance
+    _term_hits_with_bank: 386
+  lending.specialised.object_finance:
+    name: Object Finance
+    type: leaf
+    parent: lending.specialised
+    definition: Financing of a specific physical asset where repayment depends substantially on asset cash flows
+      or value.
+    includes:
+    - aircraft finance
+    - ship finance
+    - railcar finance
+    - equipment finance
+    excludes:
+    - aircraft orders without financing
+    - general airline corporate loan
+    synonyms: []
+    yes_no_question: Does the article describe a bank financing a specific aircraft, ship, railcar, or other physical
+      asset, with repayment tied to that asset?
+    criteria:
+      'true': Aircraft, ship, rail, or equipment financing or leasing finance tied to specific assets is reported.
+      'false': Aircraft or ship orders and deliveries, or a general loan to an airline or shipping company.
+    basel:
+      exposure_class: specialised_lending
+      code: OF
+    merged_from:
+    - lending.specialised.object_finance
+    _term_hits_with_bank: 214
+  lending.cre:
+    name: Commercial Real Estate Lending
+    type: multi_label
+    parent: business.lending
+    question: Which commercial-real-estate lending categories are materially described?
+    definition: Credit exposures financing commercial real estate, income-producing property, or higher-risk development/construction.
+    includes: []
+    excludes:
+    - commercial property sale without financing
+    synonyms: []
+    yes_no_question: Does the article describe a bank lending against commercial real estate such as offices, shopping
+      centres, hotels, or development projects?
+    criteria:
+      'true': Commercial property loans, CRE loan books, or construction and development lending are reported.
+      'false': Property prices or deals with no lending, CMBS, or home mortgages.
+    merged_from:
+    - lending.cre
+    _term_hits_with_bank: null
+  lending.cre.general:
+    name: Commercial Property Lending
+    type: leaf
+    parent: lending.cre
+    definition: Lending secured on completed commercial real estate, including income-producing offices, hotels,
+      retail, and rental buildings.
+    includes:
+    - commercial mortgage
+    - CRE loan
+    - office-property finance
+    - hotel-property finance
+    - rental-property finance
+    excludes:
+    - CMBS
+    - residential mortgage
+    - construction or development lending
+    - commercial property sale without financing
+    synonyms: []
+    yes_no_question: Does the article describe a bank making or holding loans secured on commercial property such
+      as offices, shopping centres, hotels, or rental buildings?
+    criteria:
+      'true': Commercial mortgages, CRE loans, or a bank's commercial-property loan book are reported.
+      'false': Property deals without lending, CMBS, construction loans, or home mortgages.
+    merged_from:
+    - lending.cre.general
+    - lending.cre.ipre
+    _term_hits_with_bank: 986
+  lending.cre.hvcre:
+    name: Construction & Development Lending
+    type: leaf
+    parent: lending.cre
+    definition: Higher-risk CRE acquisition, development, or construction financing meeting applicable high-volatility
+      treatment.
+    includes:
+    - development finance
+    - construction finance
+    excludes:
+    - stabilised low-risk CRE lending
+    synonyms: []
+    yes_no_question: Does the article describe a bank financing the acquisition, development, or construction of
+      commercial real estate?
+    criteria:
+      'true': Construction, development, or land-acquisition lending for commercial property is reported.
+      'false': Loans on completed, stabilised properties.
+    basel:
+      exposure_class: specialised_lending
+      code: HVCRE
+    merged_from:
+    - lending.cre.hvcre
+    _term_hits_with_bank: 480
+  lending.financial_institutions:
+    name: Financial Institutions Lending
+    type: leaf
+    parent: business.lending
+    definition: Loans or facilities to banks, broker-dealers, insurers, funds, asset managers, and other NBFIs.
+    includes:
+    - bank loan
+    - broker-dealer credit
+    - insurance-company lending
+    - finance-company lending
+    - subscription line
+    - NAV facility
+    - fund finance
+    excludes:
+    - central-bank emergency lending
+    - interbank rate move
+    - interdealer securities trading
+    - hedge-fund prime financing
+    - prime brokerage margin financing
+    synonyms: []
+    yes_no_question: Does the article describe a bank lending to other financial firms, such as banks, broker-dealers,
+      insurers, finance companies, or investment funds?
+    criteria:
+      'true': Credit facilities or loans from a bank to a financial institution or fund are reported.
+      'false': Central-bank lending, interbank rates, trading between dealers, or prime brokerage and margin financing
+        of hedge funds.
+    merged_from:
+    - lending.financial_institutions
+    - lending.fi.banks
+    - lending.fi.nbfis
+    - lending.fi.funds
+    _term_hits_with_bank: 1215
+  lending.sovereign_public:
+    name: Sovereign / Public Sector Lending
+    type: leaf
+    parent: business.lending
+    definition: Loans or credit facilities to sovereigns, governments, public-sector entities, or public/multilateral
+      institutions.
+    includes:
+    - sovereign loan
+    - PSE lending
+    - public-sector credit
+    excludes:
+    - secondary sovereign bond trading
+    - IMF or multilateral programme without bank lending
+    - sovereign bond auction
+    synonyms: []
+    yes_no_question: Does the article describe a bank lending to a government, sovereign, or public-sector body?
+    criteria:
+      'true': A bank loan or credit facility to a government, state entity, municipality, or public institution
+        is reported.
+      'false': Government bond trading or issuance, or IMF/multilateral lending without banks.
+    merged_from:
+    - lending.sovereign_public
+    _term_hits_with_bank: 86
+  lending.trade_working_capital:
+    name: Trade, Working-Capital & Commodity Finance
+    type: leaf
+    parent: business.lending
+    definition: Trade loans, letters of credit, guarantees, receivables and supply-chain finance, and structured
+      financing of commodity inventories, reserves, or trade flows.
+    includes:
+    - trade loan
+    - export loan
+    - letter of credit
+    - bank guarantee
+    - factoring
+    - supply-chain finance
+    - reserve-based lending
+    - commodity inventory finance
+    excludes:
+    - trade statistics or tariffs
+    - commodity derivatives trading
+    - general corporate term loan
+    - supply-chain disruption news
+    synonyms: []
+    yes_no_question: Does the article describe a bank providing trade finance, letters of credit, guarantees, supply-chain
+      or receivables financing, or financing of commodity inventories, reserves, or trade flows?
+    criteria:
+      'true': Trade or export loans, letters of credit, bank guarantees, factoring, supply-chain finance, or structured
+        commodity or reserve-based financing is reported.
+      'false': Trade statistics, tariffs, or commodity prices without bank financing, or commodity derivatives trading.
+    merged_from:
+    - lending.trade_working_capital
+    - lending.trade.trade_loans
+    - lending.trade.lc_guarantees
+    - lending.trade.receivables_supply_chain
+    - lending.specialised.commodity_finance
+    basel:
+      note: absorbs Basel specialised-lending commodity finance (CF)
+    _term_hits_with_bank: 1020
+  lending.consumer:
+    name: Consumer Lending
+    type: leaf
+    parent: business.lending
+    definition: Credit extended to individuals for non-mortgage consumer purposes.
+    includes:
+    - credit-card loans
+    - card receivables
+    - auto loan
+    - car finance
+    - personal loan
+    - consumer installment loan
+    excludes:
+    - retail sales data
+    - debit-card processing without credit
+    - commercial fleet object finance
+    - mortgage
+    - corporate loan
+    synonyms: []
+    yes_no_question: Does the article describe a bank or lender providing credit to individuals through credit cards,
+      car loans, or personal loans?
+    criteria:
+      'true': Consumer lending, card balances, auto loans, or personal-loan books are reported.
+      'false': Consumer spending data without credit, or home mortgages.
+    merged_from:
+    - lending.consumer
+    - lending.consumer.cards
+    - lending.consumer.auto
+    - lending.consumer.personal
+    _term_hits_with_bank: 1788
+  lending.residential_mortgage:
+    name: Residential Mortgage Lending
+    type: leaf
+    parent: business.lending
+    definition: Credit secured by residential real estate, including owner-occupied, income-producing residential
+      property, and home-equity credit.
+    includes:
+    - home mortgage
+    - owner-occupied mortgage
+    - buy-to-let mortgage
+    - home-equity loan
+    - HELOC
+    excludes:
+    - house prices without lending
+    - RMBS
+    - commercial CRE loan
+    synonyms: []
+    yes_no_question: Does the article describe a bank or lender providing home loans secured on residential property?
+    criteria:
+      'true': Residential mortgage lending, mortgage books, or home-equity credit is reported.
+      'false': House prices or housing starts without lending, or mortgage-backed securities.
+    merged_from:
+    - lending.residential_mortgage
+    - lending.mortgage.owner_occupied
+    - lending.mortgage.income_producing
+    - lending.mortgage.home_equity
+    _term_hits_with_bank: 6765

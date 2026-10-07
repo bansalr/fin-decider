@@ -3,17 +3,11 @@
     "id": "gsib_basel_markets_lending",
     "version": "1.1.0",
     "title": "Basel-derived G-SIB Markets and Lending Activity Ontology",
-    "description": "Hierarchical multi-label ontology for financial-news classification by materially described G-SIB business activity.",
-    "semantics": {
-      "target": "material_gsib_business_activity",
-      "multi_label": true,
-      "generic_market_context_is_not_activity": true
-    },
+    "description": "v1.1: consolidated (rare and overlapping nodes merged) with per-node yes/no questions and criteria.",
     "roots": [
       "relevance"
     ],
-    "changes_from": "1.0.0",
-    "changes": "Adds per-node yes_no_question and criteria{true,false}, and appends exclusions for known hard boundaries. Node IDs, hierarchy, names and types are unchanged."
+    "changes_from": "1.0.0"
   },
   "nodes": {
     "relevance": {
@@ -24,6 +18,9 @@
       "includes": [],
       "excludes": [],
       "synonyms": [],
+      "merged_from": [
+        "relevance"
+      ],
       "children": [
         "relevance.gsib_activity",
         "relevance.market_context_only",
@@ -56,16 +53,19 @@
         "banking activity",
         "dealer activity"
       ],
-      "children": [
-        "business.markets",
-        "business.lending",
-        "business.treasury_alm"
-      ],
       "yes_no_question": "Does the article describe a bank, dealer, or lender doing business, such as lending, underwriting, trading, market making, financing clients, or managing its own funding?",
       "criteria": {
         "true": "A bank or dealer's lending, deal, trade, client financing, or funding activity is reported, or a bank business line's results or strategy are discussed.",
         "false": "Only prices, economic data, policy, or non-bank company news, with no bank or dealer activity described."
-      }
+      },
+      "merged_from": [
+        "relevance.gsib_activity"
+      ],
+      "children": [
+        "business.markets",
+        "business.lending",
+        "business.treasury_alm"
+      ]
     },
     "relevance.market_context_only": {
       "name": "Market Context Only",
@@ -90,7 +90,10 @@
       "criteria": {
         "true": "Market moves, prices, economic data, central-bank or government policy, or company news, with no bank or dealer business activity described.",
         "false": "A bank or dealer activity is described, or the article is not about markets or the economy at all."
-      }
+      },
+      "merged_from": [
+        "relevance.market_context_only"
+      ]
     },
     "relevance.neither": {
       "name": "Neither / Out of Scope",
@@ -111,7 +114,10 @@
       "criteria": {
         "true": "General news such as sport, culture, crime, weather, or non-financial human-interest stories.",
         "false": "Any financial-market, economic, policy, company, or banking content is discussed."
-      }
+      },
+      "merged_from": [
+        "relevance.neither"
+      ]
     },
     "business.markets": {
       "name": "Markets",
@@ -137,6 +143,14 @@
         "global markets",
         "sales and trading"
       ],
+      "yes_no_question": "Does the article describe a bank or dealer trading, making markets, underwriting or syndicating deals, providing derivatives, or financing clients' securities positions?",
+      "criteria": {
+        "true": "Sales and trading, market making, derivatives, securities financing, structured products, or underwriting activity by a bank or dealer is reported.",
+        "false": "Only asset prices or issuer news, or bank lending that is held as a loan with no markets activity."
+      },
+      "merged_from": [
+        "business.markets"
+      ],
       "children": [
         "markets.macro",
         "markets.credit",
@@ -145,12 +159,7 @@
         "markets.financing",
         "markets.derivatives_xva",
         "markets.underwriting"
-      ],
-      "yes_no_question": "Does the article describe a bank or dealer trading, making markets, underwriting or syndicating deals, providing derivatives, or financing clients' securities positions?",
-      "criteria": {
-        "true": "Sales and trading, market making, derivatives, securities financing, structured products, or underwriting activity by a bank or dealer is reported.",
-        "false": "Only asset prices or issuer news, or bank lending that is held as a loan with no markets activity."
-      }
+      ]
     },
     "business.lending": {
       "name": "Lending",
@@ -177,6 +186,14 @@
         "bank lending",
         "credit"
       ],
+      "yes_no_question": "Does the article describe a bank or lender providing, committing, arranging, or managing a loan or credit facility?",
+      "criteria": {
+        "true": "A loan, revolver, credit line, mortgage, trade facility, or other credit extension by a bank or lender is reported.",
+        "false": "Only securities trading, underwriting of bonds or shares, or borrowing that is not from a bank or lender."
+      },
+      "merged_from": [
+        "business.lending"
+      ],
       "children": [
         "lending.corporate",
         "lending.leveraged_sponsor",
@@ -187,12 +204,7 @@
         "lending.trade_working_capital",
         "lending.consumer",
         "lending.residential_mortgage"
-      ],
-      "yes_no_question": "Does the article describe a bank or lender providing, committing, arranging, or managing a loan or credit facility?",
-      "criteria": {
-        "true": "A loan, revolver, credit line, mortgage, trade facility, or other credit extension by a bank or lender is reported.",
-        "false": "Only securities trading, underwriting of bonds or shares, or borrowing that is not from a bank or lender."
-      }
+      ]
     },
     "business.treasury_alm": {
       "name": "Treasury / ALM",
@@ -215,98 +227,78 @@
         "ALM",
         "bank treasury"
       ],
-      "children": [
-        "treasury.funding",
-        "treasury.liquidity",
-        "treasury.structural_rates",
-        "treasury.structural_fx"
-      ],
       "yes_no_question": "Does the article describe a bank managing its own funding, liquidity, or balance-sheet interest-rate or currency risk?",
       "criteria": {
         "true": "A bank's own funding raising, liquidity buffers, deposit or wholesale funding strategy, or structural rate/FX hedging is reported.",
         "false": "Client trading, client financing, or central-bank policy without a bank's own balance-sheet management."
-      }
+      },
+      "merged_from": [
+        "business.treasury_alm"
+      ],
+      "children": [
+        "treasury.funding_liquidity",
+        "treasury.structural_risk"
+      ]
     },
-    "treasury.funding": {
-      "name": "Treasury Funding",
+    "treasury.funding_liquidity": {
+      "name": "Funding & Liquidity",
       "type": "leaf",
       "parent": "business.treasury_alm",
-      "definition": "Bank-level wholesale or secured funding undertaken for balance-sheet funding.",
+      "definition": "A bank's own wholesale, secured, or bond funding, and management of its liquidity buffer and liquid-asset portfolio.",
       "includes": [
         "wholesale funding",
-        "secured funding"
+        "secured funding",
+        "bank's own bond issuance",
+        "covered bonds",
+        "liquidity buffer",
+        "HQLA",
+        "LCR"
       ],
       "excludes": [
         "client repo financing",
-        "bank underwriting a client's bond"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank raising funding for its own balance sheet, for example by issuing its own bonds, covered bonds, or using wholesale or secured funding?",
-      "criteria": {
-        "true": "A bank's own funding transaction or funding plan is reported.",
-        "false": "The bank finances a client, or only the funding market in general is discussed."
-      }
-    },
-    "treasury.liquidity": {
-      "name": "Liquidity Management",
-      "type": "leaf",
-      "parent": "business.treasury_alm",
-      "definition": "Management of bank liquidity resources, liquidity buffer, and liquid-asset portfolio.",
-      "includes": [
-        "HQLA",
-        "liquidity buffer"
-      ],
-      "excludes": [
-        "client securities trading",
+        "bank underwriting a client's bond",
         "general market liquidity conditions"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank managing its liquidity, liquidity buffer, or holdings of high-quality liquid assets?",
+      "yes_no_question": "Does the article describe a bank raising funding for its own balance sheet or managing its own liquidity, for example issuing its own bonds or building its liquidity buffer?",
       "criteria": {
-        "true": "A bank's liquidity position, buffers, LCR, HQLA holdings, or liquidity actions are reported.",
-        "false": "Market liquidity in general, or a central bank providing liquidity with no bank-side management described."
-      }
+        "true": "A bank's own funding transaction or plan, liquidity buffer, LCR, or HQLA position is reported.",
+        "false": "The bank finances a client, or only funding markets or central-bank liquidity in general are discussed."
+      },
+      "merged_from": [
+        "treasury.funding",
+        "treasury.liquidity"
+      ]
     },
-    "treasury.structural_rates": {
-      "name": "Structural Interest-Rate Risk",
+    "treasury.structural_risk": {
+      "name": "Structural Rate & FX Risk",
       "type": "leaf",
       "parent": "business.treasury_alm",
-      "definition": "Management of structural interest-rate exposure arising from the banking book.",
+      "definition": "Management or hedging of interest-rate and currency risk arising from the bank's own balance sheet (banking book and capital).",
       "includes": [
         "IRRBB",
-        "structural rates hedging"
-      ],
-      "excludes": [
-        "client rates trading",
-        "interest-rate forecast without bank balance-sheet management"
-      ],
-      "synonyms": [
-        "IRRBB"
-      ],
-      "yes_no_question": "Does the article describe a bank managing or hedging the interest-rate risk on its own balance sheet?",
-      "criteria": {
-        "true": "A bank's banking-book rate exposure, net-interest-income hedging, or IRRBB management is reported.",
-        "false": "Rates trading for clients, or general interest-rate moves."
-      }
-    },
-    "treasury.structural_fx": {
-      "name": "Structural FX",
-      "type": "leaf",
-      "parent": "business.treasury_alm",
-      "definition": "Management or hedging of structural foreign-exchange exposure arising from the bank balance sheet.",
-      "includes": [
+        "net-interest-income hedging",
+        "structural rates hedging",
         "structural FX hedging"
       ],
       "excludes": [
+        "client rates trading",
         "client FX trading",
-        "currency move without bank hedging"
+        "interest-rate or currency move without bank hedging"
       ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank managing or hedging currency risk on its own balance sheet or capital?",
+      "synonyms": [
+        "IRRBB",
+        "ALM hedging"
+      ],
+      "yes_no_question": "Does the article describe a bank managing or hedging the interest-rate or currency risk on its own balance sheet?",
       "criteria": {
-        "true": "A bank's structural FX exposure, capital hedging, or translation-risk management is reported.",
-        "false": "FX trading for clients, or general currency moves."
-      }
+        "true": "A bank's banking-book rate exposure, net-interest-income hedging, or structural FX or capital hedging is reported.",
+        "false": "Rates or FX trading for clients, or general interest-rate and currency moves."
+      },
+      "merged_from": [
+        "treasury.structural_rates",
+        "treasury.structural_fx"
+      ]
     },
     "markets.macro": {
       "name": "Macro Markets",
@@ -320,29 +312,33 @@
         "currency move without dealer activity"
       ],
       "synonyms": [],
-      "children": [
-        "markets.macro.rates",
-        "markets.macro.fx",
-        "markets.macro.commodities",
-        "markets.macro.inflation",
-        "markets.macro.emerging_markets"
-      ],
       "yes_no_question": "Does the article describe a bank or dealer trading or making markets in government bonds, interest-rate products, currencies, commodities, inflation products, or emerging-market macro instruments?",
       "criteria": {
         "true": "Dealer or bank trading, market making, or client flows in rates, FX, commodities, inflation, or EM macro products are reported.",
         "false": "Only price or yield moves, economic data, or policy decisions, with no dealer or bank trading activity."
-      }
+      },
+      "merged_from": [
+        "markets.macro"
+      ],
+      "children": [
+        "markets.macro.rates",
+        "markets.macro.fx",
+        "markets.macro.commodities"
+      ]
     },
     "markets.macro.rates": {
       "name": "Rates",
       "type": "leaf",
       "parent": "markets.macro",
-      "definition": "Trading or market making in government bonds, interest-rate swaps, swaptions, futures, options, or related rates products.",
+      "definition": "Trading or market making in government bonds, interest-rate swaps, swaptions, futures, options, inflation-linked products, or emerging-market local rates.",
       "includes": [
         "government bonds",
         "interest-rate swaps",
         "swaptions",
-        "rates futures"
+        "rates futures",
+        "inflation swaps",
+        "linkers",
+        "EM local-currency bonds"
       ],
       "excludes": [
         "corporate credit",
@@ -353,22 +349,28 @@
       "synonyms": [
         "interest rates"
       ],
-      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in government bonds, interest-rate swaps, swaptions, or rates futures and options?",
+      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in government bonds, interest-rate swaps, inflation-linked bonds, or other rates products, including in emerging markets?",
       "criteria": {
-        "true": "Dealer activity in rates products is reported, such as primary dealer bidding, swap trading, or client rates flows.",
-        "false": "Only yield or interest-rate moves, central-bank decisions, or a bank's own balance-sheet hedging."
-      }
+        "true": "Dealer activity in rates or inflation products is reported, such as primary-dealer bidding, swap trading, or client rates flows.",
+        "false": "Only yield, inflation, or rate moves, economic data, central-bank decisions, or a bank's own balance-sheet hedging."
+      },
+      "merged_from": [
+        "markets.macro.rates",
+        "markets.macro.inflation",
+        "markets.macro.emerging_markets"
+      ]
     },
     "markets.macro.fx": {
       "name": "Foreign Exchange",
       "type": "leaf",
       "parent": "markets.macro",
-      "definition": "Client-facing trading or market making in spot FX, forwards, FX swaps, options, or related currency products.",
+      "definition": "Client-facing trading or market making in spot FX, forwards, FX swaps, options, or related currency products, including emerging-market currencies.",
       "includes": [
         "spot FX",
         "FX forwards",
         "FX swaps",
-        "currency options"
+        "currency options",
+        "EM FX"
       ],
       "excludes": [
         "structural FX",
@@ -378,11 +380,15 @@
         "FX",
         "currencies"
       ],
-      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in currencies, FX forwards, FX swaps, or currency options for clients?",
+      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in currencies for clients, including emerging-market currencies, FX forwards, swaps, or options?",
       "criteria": {
         "true": "Dealer FX trading, client currency flows, or FX derivatives activity by a bank is reported.",
         "false": "Only exchange-rate moves or currency policy, or a bank hedging its own structural FX."
-      }
+      },
+      "merged_from": [
+        "markets.macro.fx",
+        "markets.macro.emerging_markets"
+      ]
     },
     "markets.macro.commodities": {
       "name": "Commodities",
@@ -406,52 +412,10 @@
       "criteria": {
         "true": "Bank or dealer commodity trading, hedging for clients, or commodity derivatives activity is reported.",
         "false": "Only commodity prices, supply, or production news, or a bank lending against commodities."
-      }
-    },
-    "markets.macro.inflation": {
-      "name": "Inflation",
-      "type": "leaf",
-      "parent": "markets.macro",
-      "definition": "Trading or market making in inflation-linked securities, inflation swaps, or inflation options.",
-      "includes": [
-        "inflation swaps",
-        "linkers"
-      ],
-      "excludes": [
-        "generic inflation news",
-        "inflation data release"
-      ],
-      "synonyms": [
-        "inflation trading"
-      ],
-      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in inflation-linked bonds, inflation swaps, or inflation options?",
-      "criteria": {
-        "true": "Dealer activity in inflation-linked products is reported.",
-        "false": "Only inflation data, forecasts, or policy."
-      }
-    },
-    "markets.macro.emerging_markets": {
-      "name": "Emerging Markets Macro",
-      "type": "leaf",
-      "parent": "markets.macro",
-      "definition": "Trading in emerging-market sovereign rates, local rates, currencies, or related macro instruments.",
-      "includes": [
-        "EM FX",
-        "EM rates",
-        "local-currency sovereign bonds"
-      ],
-      "excludes": [
-        "EM corporate lending",
-        "EM currency or bond price move without dealer activity"
-      ],
-      "synonyms": [
-        "EM macro"
-      ],
-      "yes_no_question": "Does the article describe a bank or dealer trading emerging-market currencies, local-currency government bonds, or other emerging-market macro instruments?",
-      "criteria": {
-        "true": "Dealer activity or client flows in EM FX, EM rates, or EM sovereign debt are reported.",
-        "false": "Only emerging-market price moves or economic news, or lending to EM companies."
-      }
+      },
+      "merged_from": [
+        "markets.macro.commodities"
+      ]
     },
     "markets.credit": {
       "name": "Credit Markets",
@@ -464,73 +428,63 @@
         "credit-rating action only"
       ],
       "synonyms": [],
-      "children": [
-        "markets.credit.investment_grade",
-        "markets.credit.high_yield_distressed",
-        "markets.credit.credit_derivatives",
-        "markets.credit.structured_credit"
-      ],
       "yes_no_question": "Does the article describe a bank or dealer trading, making markets in, or structuring corporate bonds, credit derivatives, or structured credit?",
       "criteria": {
         "true": "Dealer or bank activity in corporate credit, CDS, credit indices, or tranched credit is reported.",
         "false": "Only credit spreads or ratings news, or a company's bond issuance with no dealer trading described."
-      }
+      },
+      "merged_from": [
+        "markets.credit"
+      ],
+      "children": [
+        "markets.credit.cash",
+        "markets.credit.credit_derivatives"
+      ]
     },
-    "markets.credit.investment_grade": {
-      "name": "Investment Grade Credit",
+    "markets.credit.cash": {
+      "name": "Corporate Bond Trading",
       "type": "leaf",
       "parent": "markets.credit",
-      "definition": "Trading or market making in investment-grade corporate credit.",
+      "definition": "Trading or market making in investment-grade, high-yield, or distressed corporate credit.",
       "includes": [
         "investment-grade bonds",
-        "IG credit"
-      ],
-      "excludes": [
-        "high-yield credit",
-        "corporate lending",
-        "IG bond issuance without secondary trading"
-      ],
-      "synonyms": [
-        "IG credit"
-      ],
-      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in investment-grade corporate bonds?",
-      "criteria": {
-        "true": "Dealer trading, inventory, or client flows in investment-grade corporate bonds are reported.",
-        "false": "Only spreads or ratings, new bond issuance without trading, or loans."
-      }
-    },
-    "markets.credit.high_yield_distressed": {
-      "name": "High Yield / Distressed Credit",
-      "type": "leaf",
-      "parent": "markets.credit",
-      "definition": "Trading or market making in high-yield, defaulted, or distressed credit.",
-      "includes": [
         "high-yield bonds",
         "distressed debt"
       ],
       "excludes": [
+        "corporate lending",
         "leveraged loan origination",
-        "default or bankruptcy news without dealer trading"
+        "credit-rating action only",
+        "bond issuance without secondary trading",
+        "default news without dealer trading"
       ],
       "synonyms": [
+        "cash credit",
+        "IG credit",
         "HY credit"
       ],
-      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in high-yield (junk) or distressed debt?",
+      "yes_no_question": "Does the article describe a bank or dealer trading or making markets in corporate bonds, including investment-grade, high-yield (junk), or distressed debt?",
       "criteria": {
-        "true": "Dealer trading, inventory, or client flows in high-yield or distressed debt are reported.",
-        "false": "Only defaults, ratings, or junk-bond issuance without dealer trading."
-      }
+        "true": "Dealer trading, inventory, or client flows in corporate bonds or distressed debt are reported.",
+        "false": "Only spreads, ratings, defaults, or new bond issuance without secondary trading, or loans."
+      },
+      "merged_from": [
+        "markets.credit.investment_grade",
+        "markets.credit.high_yield_distressed"
+      ]
     },
     "markets.credit.credit_derivatives": {
-      "name": "Credit Derivatives",
+      "name": "Credit Derivatives & Structured Credit",
       "type": "leaf",
       "parent": "markets.credit",
-      "definition": "Trading or structuring CDS, credit indices, tranches, or related derivatives.",
+      "definition": "Trading or structuring CDS, credit indices, tranches, or bespoke and synthetic structured credit.",
       "includes": [
         "CDS",
         "CDX",
         "iTraxx",
-        "credit index"
+        "credit index",
+        "bespoke tranches",
+        "synthetic CDO"
       ],
       "excludes": [
         "cash corporate bonds",
@@ -539,33 +493,15 @@
       "synonyms": [
         "CDS trading"
       ],
-      "yes_no_question": "Does the article describe a bank or dealer trading or structuring credit default swaps or credit indices?",
+      "yes_no_question": "Does the article describe a bank or dealer trading or structuring credit default swaps, credit indices, or tranched credit products such as synthetic CDOs?",
       "criteria": {
-        "true": "Dealer activity in CDS, CDX, iTraxx, or other credit derivatives is reported.",
-        "false": "CDS prices quoted only as a market indicator, or cash bond trading."
-      }
-    },
-    "markets.credit.structured_credit": {
-      "name": "Structured Credit",
-      "type": "leaf",
-      "parent": "markets.credit",
-      "definition": "Trading or structuring tranched or bespoke credit-risk products.",
-      "includes": [
-        "bespoke tranches",
-        "synthetic CDO",
-        "correlation products"
-      ],
-      "excludes": [
-        "plain corporate bonds"
-      ],
-      "synonyms": [
-        "correlation trading"
-      ],
-      "yes_no_question": "Does the article describe a bank or dealer structuring or trading tranched or bespoke credit products, such as synthetic CDOs or correlation trades?",
-      "criteria": {
-        "true": "Structuring or trading of tranched or bespoke credit risk by a bank or dealer is reported.",
-        "false": "Plain corporate bonds, CLO/CDO securitisation of loans, or credit-index trading only."
-      }
+        "true": "Dealer activity in CDS, CDX, iTraxx, or tranched or synthetic credit is reported.",
+        "false": "CDS levels cited only as a risk indicator, cash bond trading, or CLO/CDO securitisation of loans."
+      },
+      "merged_from": [
+        "markets.credit.credit_derivatives",
+        "markets.credit.structured_credit"
+      ]
     },
     "markets.equities": {
       "name": "Equities",
@@ -579,16 +515,18 @@
         "issuer earnings"
       ],
       "synonyms": [],
-      "children": [
-        "markets.equities.cash",
-        "markets.equities.derivatives",
-        "markets.equities.structured"
-      ],
       "yes_no_question": "Does the article describe a bank or dealer executing, trading, making markets in, or structuring stocks, equity derivatives, or equity-linked products?",
       "criteria": {
         "true": "Dealer or bank equity trading, execution, derivatives, or structured-equity activity is reported.",
         "false": "Only share-price moves, earnings, or stock-market commentary with no dealer activity."
-      }
+      },
+      "merged_from": [
+        "markets.equities"
+      ],
+      "children": [
+        "markets.equities.cash",
+        "markets.equities.derivatives"
+      ]
     },
     "markets.equities.cash": {
       "name": "Cash Equities",
@@ -609,48 +547,38 @@
       "criteria": {
         "true": "A bank or broker's cash-equity execution, block trade, or market-making activity is reported.",
         "false": "Only share-price moves, index levels, or equity underwriting."
-      }
+      },
+      "merged_from": [
+        "markets.equities.cash"
+      ]
     },
     "markets.equities.derivatives": {
-      "name": "Equity Derivatives",
+      "name": "Equity Derivatives & Structured Equity",
       "type": "leaf",
       "parent": "markets.equities",
-      "definition": "Trading or structuring equity options, futures, swaps, or index derivatives.",
+      "definition": "Trading or structuring equity options, futures, swaps, index derivatives, or equity-linked structured products.",
       "includes": [
         "equity options",
         "equity swaps",
-        "index options"
-      ],
-      "excludes": [
-        "cash equity execution",
-        "implied volatility cited only as a market indicator"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or dealer trading or structuring equity options, equity swaps, or index derivatives?",
-      "criteria": {
-        "true": "Dealer activity in equity derivatives is reported.",
-        "false": "Option prices or volatility levels quoted only as a market indicator, or cash-equity trading."
-      }
-    },
-    "markets.equities.structured": {
-      "name": "Structured Equity",
-      "type": "leaf",
-      "parent": "markets.equities",
-      "definition": "Structuring or distribution of equity-linked structured products.",
-      "includes": [
+        "index options",
         "equity-linked notes",
         "structured equity products"
       ],
       "excludes": [
-        "plain equity options",
-        "equity underwriting"
+        "cash equity execution",
+        "equity underwriting",
+        "implied volatility cited only as a market indicator"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank structuring or selling equity-linked notes or other structured equity products?",
+      "yes_no_question": "Does the article describe a bank or dealer trading or structuring equity options, equity swaps, index derivatives, or equity-linked structured notes?",
       "criteria": {
-        "true": "A bank's structured equity products, such as equity-linked notes, are reported.",
-        "false": "Plain options or futures, or share offerings."
-      }
+        "true": "Dealer equity-derivatives activity or a bank's structured equity products are reported.",
+        "false": "Option prices or volatility cited only as a market indicator, cash-equity trading, or share offerings."
+      },
+      "merged_from": [
+        "markets.equities.derivatives",
+        "markets.equities.structured"
+      ]
     },
     "markets.securitised": {
       "name": "Securitised Products",
@@ -663,56 +591,47 @@
         "loan origination without securitisation"
       ],
       "synonyms": [],
-      "children": [
-        "markets.securitised.rmbs",
-        "markets.securitised.cmbs",
-        "markets.securitised.abs",
-        "markets.securitised.clo_cdo"
-      ],
       "yes_no_question": "Does the article describe a bank or dealer creating, warehousing, trading, or selling mortgage-backed, asset-backed, CLO, or CDO securities?",
       "criteria": {
         "true": "Securitisation deals, dealer trading, or warehousing of RMBS, CMBS, ABS, CLOs, or CDOs is reported.",
         "false": "Only the underlying loans (mortgages, car loans) with no securitisation activity."
-      }
+      },
+      "merged_from": [
+        "markets.securitised"
+      ],
+      "children": [
+        "markets.securitised.mbs",
+        "markets.securitised.abs",
+        "markets.securitised.clo_cdo"
+      ]
     },
-    "markets.securitised.rmbs": {
-      "name": "RMBS",
+    "markets.securitised.mbs": {
+      "name": "Mortgage-Backed Securities",
       "type": "leaf",
       "parent": "markets.securitised",
-      "definition": "Residential mortgage-backed securities activity.",
+      "definition": "Residential and commercial mortgage-backed securities activity.",
       "includes": [
         "RMBS",
-        "residential MBS"
-      ],
-      "excludes": [
-        "residential mortgage origination",
-        "house-price data"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or dealer creating, trading, or selling residential mortgage-backed securities?",
-      "criteria": {
-        "true": "RMBS issuance, structuring, trading, or warehousing by a bank or dealer is reported.",
-        "false": "Home-loan lending or house prices with no mortgage-backed securities activity."
-      }
-    },
-    "markets.securitised.cmbs": {
-      "name": "CMBS",
-      "type": "leaf",
-      "parent": "markets.securitised",
-      "definition": "Commercial mortgage-backed securities activity.",
-      "includes": [
+        "residential MBS",
+        "agency MBS",
         "CMBS"
       ],
       "excludes": [
+        "residential mortgage origination",
         "direct CRE lending",
+        "house-price data",
         "commercial property prices"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or dealer creating, trading, or selling commercial mortgage-backed securities?",
+      "yes_no_question": "Does the article describe a bank or dealer creating, trading, or selling residential or commercial mortgage-backed securities?",
       "criteria": {
-        "true": "CMBS issuance, structuring, trading, or warehousing by a bank or dealer is reported.",
-        "false": "Direct commercial property loans or property-market news without CMBS activity."
-      }
+        "true": "RMBS or CMBS issuance, structuring, trading, or warehousing by a bank or dealer is reported.",
+        "false": "Mortgage lending, house or property prices, or property deals without mortgage-backed securities activity."
+      },
+      "merged_from": [
+        "markets.securitised.rmbs",
+        "markets.securitised.cmbs"
+      ]
     },
     "markets.securitised.abs": {
       "name": "ABS",
@@ -732,7 +651,10 @@
       "criteria": {
         "true": "ABS issuance, structuring, trading, or warehousing by a bank or dealer is reported.",
         "false": "Consumer loans themselves, or RMBS/CMBS."
-      }
+      },
+      "merged_from": [
+        "markets.securitised.abs"
+      ]
     },
     "markets.securitised.clo_cdo": {
       "name": "CLO / CDO",
@@ -751,7 +673,10 @@
       "criteria": {
         "true": "CLO or CDO issuance, warehousing, structuring, or trading by a bank or dealer is reported.",
         "false": "Leveraged loans themselves without a CLO or CDO."
-      }
+      },
+      "merged_from": [
+        "markets.securitised.clo_cdo"
+      ]
     },
     "markets.financing": {
       "name": "Markets Financing",
@@ -765,18 +690,18 @@
         "bank treasury funding"
       ],
       "synonyms": [],
-      "children": [
-        "markets.financing.repo",
-        "markets.financing.securities_lending",
-        "markets.financing.prime",
-        "markets.financing.margin",
-        "markets.financing.synthetic"
-      ],
       "yes_no_question": "Does the article describe a bank or dealer financing clients' securities positions through repo, securities lending, prime brokerage, margin loans, or total-return swaps?",
       "criteria": {
         "true": "Client securities-financing activity by a bank or dealer is reported.",
         "false": "Central-bank repo policy, a bank's own funding, or hedge-fund news without dealer financing."
-      }
+      },
+      "merged_from": [
+        "markets.financing"
+      ],
+      "children": [
+        "markets.financing.repo",
+        "markets.financing.prime_services"
+      ]
     },
     "markets.financing.repo": {
       "name": "Repo / Reverse Repo",
@@ -800,196 +725,79 @@
       "criteria": {
         "true": "Dealer repo or reverse-repo financing for clients, or repo desk activity, is reported.",
         "false": "Central-bank repo rates or operations, or a bank using repo for its own funding."
-      }
+      },
+      "merged_from": [
+        "markets.financing.repo"
+      ]
     },
-    "markets.financing.securities_lending": {
-      "name": "Securities Lending",
+    "markets.financing.prime_services": {
+      "name": "Prime Services & Securities Finance",
       "type": "leaf",
       "parent": "markets.financing",
-      "definition": "Client lending or borrowing of securities against collateral.",
-      "includes": [
-        "stock borrow",
-        "securities lending"
-      ],
-      "excludes": [
-        "ordinary secured loans",
-        "short-interest data only"
-      ],
-      "synonyms": [
-        "stock lending"
-      ],
-      "yes_no_question": "Does the article describe a bank or agent lending or borrowing securities for clients, such as stock borrow for short sellers?",
-      "criteria": {
-        "true": "Securities lending or borrowing activity by a bank, custodian, or prime broker is reported.",
-        "false": "Short interest figures alone, or ordinary secured loans."
-      }
-    },
-    "markets.financing.prime": {
-      "name": "Prime Brokerage Financing",
-      "type": "leaf",
-      "parent": "markets.financing",
-      "definition": "Financing and related balance-sheet services to hedge funds or institutional clients through prime brokerage.",
+      "definition": "Prime brokerage, margin and securities-based lending, securities lending, and synthetic (total-return-swap) financing of client positions.",
       "includes": [
         "prime brokerage financing",
-        "hedge-fund financing"
+        "hedge-fund financing",
+        "margin loans",
+        "securities lending",
+        "stock borrow",
+        "TRS financing"
       ],
       "excludes": [
         "generic hedge-fund news",
         "fund subscription lending",
-        "hedge-fund returns"
+        "short-interest data only",
+        "exchange margin requirement change",
+        "consumer unsecured lending"
       ],
       "synonyms": [
-        "prime finance"
+        "prime finance",
+        "prime services"
       ],
-      "yes_no_question": "Does the article describe a bank providing prime brokerage financing or services to hedge funds?",
+      "yes_no_question": "Does the article describe a bank providing prime brokerage, margin loans, securities lending, or total-return-swap financing to hedge funds or other investors?",
       "criteria": {
-        "true": "A bank's prime brokerage business, hedge-fund financing, or prime client exposure is reported.",
-        "false": "Hedge-fund performance or strategy news without the bank's prime brokerage role."
-      }
-    },
-    "markets.financing.margin": {
-      "name": "Margin Lending",
-      "type": "leaf",
-      "parent": "markets.financing",
-      "definition": "Credit against securities or trading positions to finance client margin or investment positions.",
-      "includes": [
-        "margin loans",
-        "margin lending"
-      ],
-      "excludes": [
-        "consumer unsecured lending",
-        "exchange margin requirement change"
-      ],
-      "synonyms": [
-        "margin finance"
-      ],
-      "yes_no_question": "Does the article describe a bank or broker lending against securities to finance clients' positions, such as margin loans?",
-      "criteria": {
-        "true": "Margin lending, margin calls by a lender, or securities-backed lending is reported.",
-        "false": "Unsecured consumer loans, or exchange margin requirements without a lender."
-      }
-    },
-    "markets.financing.synthetic": {
-      "name": "Synthetic Financing",
-      "type": "leaf",
-      "parent": "markets.financing",
-      "definition": "Financing exposure delivered synthetically through derivatives such as total-return swaps.",
-      "includes": [
-        "TRS financing",
-        "synthetic prime financing"
-      ],
-      "excludes": [
-        "derivatives with no financing purpose"
-      ],
-      "synonyms": [
-        "synthetic prime finance"
-      ],
-      "yes_no_question": "Does the article describe a bank financing a client's exposure synthetically through total-return swaps or similar derivatives?",
-      "criteria": {
-        "true": "Total-return swap or synthetic prime financing provided by a bank is reported.",
-        "false": "Derivatives used purely for hedging with no financing purpose."
-      }
+        "true": "A bank's prime brokerage business, client margin or securities-backed lending, securities lending, or synthetic financing is reported.",
+        "false": "Hedge-fund performance news, short-interest data, or exchange margin rules without a bank financing clients."
+      },
+      "merged_from": [
+        "markets.financing.securities_lending",
+        "markets.financing.prime",
+        "markets.financing.margin",
+        "markets.financing.synthetic"
+      ]
     },
     "markets.derivatives_xva": {
       "name": "Derivatives / XVA",
-      "type": "multi_label",
-      "parent": "business.markets",
-      "question": "Which derivatives, clearing, or valuation-adjustment activities are materially described?",
-      "definition": "Cross-asset OTC or cleared derivatives, client clearing, or XVA/CVA activity.",
-      "includes": [],
-      "excludes": [
-        "derivatives regulation without bank activity"
-      ],
-      "synonyms": [],
-      "children": [
-        "markets.derivatives.otc",
-        "markets.derivatives.cleared",
-        "markets.derivatives.client_clearing",
-        "markets.derivatives.xva"
-      ],
-      "yes_no_question": "Does the article describe a bank or dealer providing OTC or cleared derivatives, clearing services for clients, or managing derivative valuation adjustments such as CVA?",
-      "criteria": {
-        "true": "Dealer derivatives activity, client clearing, CCP clearing by a bank, or XVA/CVA management is reported.",
-        "false": "Exchange or regulator news without bank derivatives activity, or derivatives only named in passing."
-      }
-    },
-    "markets.derivatives.otc": {
-      "name": "OTC Derivatives",
       "type": "leaf",
-      "parent": "markets.derivatives_xva",
-      "definition": "Bilateral OTC derivative activity not better classified solely by asset class.",
+      "parent": "business.markets",
+      "definition": "Cross-asset OTC or cleared derivatives, client clearing, or XVA/CVA activity.",
       "includes": [
         "OTC swaps",
-        "bilateral derivatives"
-      ],
-      "excludes": [
-        "exchange-traded futures"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or dealer entering into bilateral over-the-counter derivatives with clients or counterparties?",
-      "criteria": {
-        "true": "Bank or dealer OTC derivative trades, exposures, or client OTC business are reported.",
-        "false": "Exchange-traded futures only, or derivatives mentioned only in passing."
-      }
-    },
-    "markets.derivatives.cleared": {
-      "name": "Cleared Derivatives",
-      "type": "leaf",
-      "parent": "markets.derivatives_xva",
-      "definition": "Derivative activity centrally cleared through a CCP.",
-      "includes": [
+        "bilateral derivatives",
         "cleared swaps",
-        "centrally cleared derivatives"
-      ],
-      "excludes": [
-        "bilateral OTC derivatives"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or dealer trading derivatives that are centrally cleared through a clearing house?",
-      "criteria": {
-        "true": "Bank or dealer activity in cleared swaps or centrally cleared derivatives is reported.",
-        "false": "Bilateral OTC derivatives, or clearing-house news without bank activity."
-      }
-    },
-    "markets.derivatives.client_clearing": {
-      "name": "Client Clearing",
-      "type": "leaf",
-      "parent": "markets.derivatives_xva",
-      "definition": "Provision of clearing access or clearing services to clients.",
-      "includes": [
         "client clearing",
-        "futures clearing"
-      ],
-      "excludes": [
-        "proprietary clearing with no client service",
-        "CCP corporate news without bank clearing members"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank providing clearing access or clearing services to clients for derivatives or futures?",
-      "criteria": {
-        "true": "A bank's client clearing or futures clearing business is reported.",
-        "false": "Clearing-house or regulator news without a bank clearing for clients."
-      }
-    },
-    "markets.derivatives.xva": {
-      "name": "CVA / XVA",
-      "type": "leaf",
-      "parent": "markets.derivatives_xva",
-      "definition": "Management, pricing, hedging, or trading of derivative valuation adjustments.",
-      "includes": [
+        "futures clearing",
         "CVA",
         "XVA",
         "FVA"
       ],
       "excludes": [
-        "generic derivatives with no XVA activity"
+        "derivatives regulation without bank activity",
+        "proprietary clearing with no client service"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank pricing, hedging, or reporting valuation adjustments on derivatives, such as CVA, FVA, or XVA?",
+      "yes_no_question": "Does the article describe a bank or dealer providing OTC or cleared derivatives, clearing services for clients, or managing derivative valuation adjustments such as CVA?",
       "criteria": {
-        "true": "A bank's CVA, FVA, or other XVA charges, desks, hedging, or losses are reported.",
-        "false": "Derivatives activity with no valuation-adjustment element."
-      }
+        "true": "Dealer derivatives activity, client clearing, CCP clearing by a bank, or XVA/CVA management is reported.",
+        "false": "Exchange or regulator news without bank derivatives activity, or derivatives only named in passing."
+      },
+      "merged_from": [
+        "markets.derivatives_xva",
+        "markets.derivatives.otc",
+        "markets.derivatives.cleared",
+        "markets.derivatives.client_clearing",
+        "markets.derivatives.xva"
+      ]
     },
     "markets.underwriting": {
       "name": "Underwriting / Syndication",
@@ -1002,16 +810,19 @@
         "issuance with no bank role described"
       ],
       "synonyms": [],
-      "children": [
-        "markets.underwriting.dcm",
-        "markets.underwriting.ecm",
-        "markets.underwriting.loan_syndication"
-      ],
       "yes_no_question": "Does the article describe banks underwriting, arranging, or running the books on a bond sale, share offering, IPO, or syndicated loan?",
       "criteria": {
         "true": "Banks are reported as underwriters, bookrunners, arrangers, or placement agents on a debt, equity, or loan deal.",
         "false": "The issuer raises money but no bank role is described, or only secondary-market trading."
-      }
+      },
+      "merged_from": [
+        "markets.underwriting"
+      ],
+      "children": [
+        "markets.underwriting.dcm",
+        "markets.underwriting.ecm",
+        "markets.underwriting.loan_syndication"
+      ]
     },
     "markets.underwriting.dcm": {
       "name": "Debt Capital Markets Underwriting",
@@ -1033,7 +844,10 @@
       "criteria": {
         "true": "Banks are named or described as underwriters, bookrunners, or arrangers of a bond or debt issue.",
         "false": "A company sells bonds with no bank role described, or only secondary bond trading."
-      }
+      },
+      "merged_from": [
+        "markets.underwriting.dcm"
+      ]
     },
     "markets.underwriting.ecm": {
       "name": "Equity Capital Markets Underwriting",
@@ -1054,7 +868,10 @@
       "criteria": {
         "true": "Banks are named or described as underwriters, bookrunners, or placement agents on an equity or equity-linked deal.",
         "false": "IPO plans or share sales with no bank role described, or secondary stock trading."
-      }
+      },
+      "merged_from": [
+        "markets.underwriting.ecm"
+      ]
     },
     "markets.underwriting.loan_syndication": {
       "name": "Loan Syndication",
@@ -1074,7 +891,10 @@
       "criteria": {
         "true": "A syndicated loan, its arrangers or bookrunners, or loan distribution to lenders is reported.",
         "false": "A single bank's bilateral loan, or a bond deal."
-      }
+      },
+      "merged_from": [
+        "markets.underwriting.loan_syndication"
+      ]
     },
     "lending.corporate": {
       "name": "Corporate Lending",
@@ -1087,54 +907,46 @@
         "corporate bond issuance"
       ],
       "synonyms": [],
-      "children": [
-        "lending.corporate.large",
-        "lending.corporate.middle_market",
-        "lending.corporate.sme"
-      ],
       "yes_no_question": "Does the article describe a bank lending to a company through a general-purpose loan, term loan, or revolving credit facility?",
       "criteria": {
         "true": "A bank loan or credit facility to a company for general corporate purposes is reported.",
         "false": "Leveraged buyout or acquisition financing, project or asset-specific financing, or company bond sales."
-      }
+      },
+      "merged_from": [
+        "lending.corporate"
+      ],
+      "children": [
+        "lending.corporate.large_mid",
+        "lending.corporate.sme"
+      ]
     },
-    "lending.corporate.large": {
-      "name": "Large Corporate Lending",
+    "lending.corporate.large_mid": {
+      "name": "Large & Mid-Sized Corporate Lending",
       "type": "leaf",
       "parent": "lending.corporate",
-      "definition": "General lending and facilities to large corporate borrowers.",
+      "definition": "General lending and facilities to large and middle-market corporate borrowers.",
       "includes": [
         "large corporate revolver",
-        "investment-grade corporate loan"
+        "investment-grade corporate loan",
+        "middle-market loans",
+        "term loan"
       ],
       "excludes": [
         "leveraged finance",
-        "project finance"
+        "project finance",
+        "SME lending",
+        "corporate bond issuance"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank lending to a large company through a general-purpose loan or revolving credit facility?",
+      "yes_no_question": "Does the article describe a bank lending to a large or mid-sized company through a general-purpose loan, term loan, or revolving credit facility?",
       "criteria": {
-        "true": "A loan or facility to a large or investment-grade company for general purposes is reported.",
-        "false": "Leveraged, acquisition, or project financing, or loans to small businesses."
-      }
-    },
-    "lending.corporate.middle_market": {
-      "name": "Middle Market Lending",
-      "type": "leaf",
-      "parent": "lending.corporate",
-      "definition": "General lending to middle-market corporate borrowers.",
-      "includes": [
-        "middle-market loans"
-      ],
-      "excludes": [
-        "consumer lending"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank lending to a mid-sized company?",
-      "criteria": {
-        "true": "Lending to middle-market companies, or a bank's middle-market lending business, is reported.",
-        "false": "Loans to large corporates, small businesses, or individuals."
-      }
+        "true": "A loan or facility to a large or mid-sized company for general corporate purposes is reported.",
+        "false": "Leveraged, acquisition, or project financing, loans to small businesses, or company bond sales."
+      },
+      "merged_from": [
+        "lending.corporate.large",
+        "lending.corporate.middle_market"
+      ]
     },
     "lending.corporate.sme": {
       "name": "SME Corporate Lending",
@@ -1153,7 +965,10 @@
       "criteria": {
         "true": "SME or small-business lending, including government-backed small-business loan schemes run through banks, is reported.",
         "false": "Personal loans to individuals, or lending to large companies."
-      }
+      },
+      "merged_from": [
+        "lending.corporate.sme"
+      ]
     },
     "lending.leveraged_sponsor": {
       "name": "Leveraged / Sponsor Finance",
@@ -1166,16 +981,18 @@
         "M&A deal with no financing described"
       ],
       "synonyms": [],
-      "children": [
-        "lending.leveraged_sponsor.leveraged_loan",
-        "lending.leveraged_sponsor.acquisition",
-        "lending.leveraged_sponsor.bridge"
-      ],
       "yes_no_question": "Does the article describe banks providing leveraged loans, buyout financing, acquisition financing, or bridge loans?",
       "criteria": {
         "true": "Leveraged lending, private-equity-sponsor financing, acquisition loans, or bridge financing by banks is reported.",
         "false": "An acquisition with no debt financing described, or high-yield bond trading."
-      }
+      },
+      "merged_from": [
+        "lending.leveraged_sponsor"
+      ],
+      "children": [
+        "lending.leveraged_sponsor.leveraged_loan",
+        "lending.leveraged_sponsor.acquisition"
+      ]
     },
     "lending.leveraged_sponsor.leveraged_loan": {
       "name": "Leveraged Loan",
@@ -1195,69 +1012,63 @@
       "criteria": {
         "true": "Leveraged loans, term loan B, or a bank's leveraged-loan pipeline or exposure are reported.",
         "false": "High-yield bond trading, or investment-grade corporate loans."
-      }
+      },
+      "merged_from": [
+        "lending.leveraged_sponsor.leveraged_loan"
+      ]
     },
     "lending.leveraged_sponsor.acquisition": {
-      "name": "Acquisition Finance",
+      "name": "Acquisition & Bridge Finance",
       "type": "leaf",
       "parent": "lending.leveraged_sponsor",
-      "definition": "Debt financing used to fund an acquisition, merger, or sponsor-backed buyout.",
+      "definition": "Debt financing, including bridge facilities, used to fund an acquisition, merger, or sponsor-backed buyout until permanent financing is raised.",
       "includes": [
         "acquisition loan",
         "M&A financing",
-        "LBO financing"
-      ],
-      "excludes": [
-        "general corporate loan unrelated to acquisition"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe banks providing debt financing for an acquisition, merger, or buyout?",
-      "criteria": {
-        "true": "Loans or committed financing from banks to fund an acquisition or leveraged buyout are reported.",
-        "false": "An acquisition with no debt financing described, or a general loan unrelated to an acquisition."
-      }
-    },
-    "lending.leveraged_sponsor.bridge": {
-      "name": "Bridge Finance",
-      "type": "leaf",
-      "parent": "lending.leveraged_sponsor",
-      "definition": "Committed financing intended to bridge a transaction until permanent financing is raised.",
-      "includes": [
+        "LBO financing",
         "bridge loan",
         "bridge facility",
         "bridge-to-bond"
       ],
       "excludes": [
-        "ordinary revolving credit"
+        "general corporate loan unrelated to acquisition",
+        "ordinary revolving credit",
+        "M&A deal with no financing described"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank providing a bridge loan to fund a deal until permanent financing is raised?",
+      "yes_no_question": "Does the article describe banks providing loans, bridge loans, or committed financing to fund an acquisition, merger, or buyout?",
       "criteria": {
-        "true": "A bridge loan, bridge facility, or bridge-to-bond financing is reported.",
-        "false": "Ordinary revolving credit or term loans."
-      }
+        "true": "Acquisition loans, bridge loans or facilities, or committed financing for a merger or LBO are reported.",
+        "false": "An acquisition with no debt financing described, or general loans unrelated to a deal."
+      },
+      "merged_from": [
+        "lending.leveraged_sponsor.acquisition",
+        "lending.leveraged_sponsor.bridge"
+      ]
     },
     "lending.specialised": {
       "name": "Specialised Lending",
       "type": "multi_label",
       "parent": "business.lending",
       "question": "Which specialised-lending categories are materially described?",
-      "definition": "Asset-, project-, or transaction-specific lending whose repayment is closely tied to the financed project, object, or commodity.",
+      "definition": "Project- or asset-specific lending whose repayment is closely tied to the financed project or object.",
       "includes": [],
       "excludes": [
         "project announcement without financing"
       ],
       "synonyms": [],
+      "yes_no_question": "Does the article describe a bank financing a specific project or physical asset, such as a power plant, pipeline, aircraft, or ship, where repayment depends on that project or asset?",
+      "criteria": {
+        "true": "Project finance or asset/object finance (aircraft, ships, rail, equipment) by a lender is reported.",
+        "false": "General company loans, or project, asset, or commodity news without financing."
+      },
+      "merged_from": [
+        "lending.specialised"
+      ],
       "children": [
         "lending.specialised.project_finance",
-        "lending.specialised.object_finance",
-        "lending.specialised.commodity_finance"
-      ],
-      "yes_no_question": "Does the article describe a bank financing a specific project, physical asset, or commodity where repayment depends on that project, asset, or commodity?",
-      "criteria": {
-        "true": "Project finance, asset/object finance (aircraft, ships), or structured commodity finance by a lender is reported.",
-        "false": "General company loans, or project, asset, or commodity news without financing."
-      }
+        "lending.specialised.object_finance"
+      ]
     },
     "lending.specialised.project_finance": {
       "name": "Project Finance",
@@ -1275,15 +1086,18 @@
         "project construction news without financing"
       ],
       "synonyms": [],
-      "basel": {
-        "exposure_class": "specialised_lending",
-        "code": "PF"
-      },
       "yes_no_question": "Does the article describe lenders financing a specific project, such as a power plant, pipeline, or infrastructure, repaid from the project's own revenues?",
       "criteria": {
         "true": "Project finance, non-recourse or limited-recourse project debt, or a project-company loan is reported.",
         "false": "General corporate borrowing by an infrastructure or energy company, or project news without financing."
-      }
+      },
+      "basel": {
+        "exposure_class": "specialised_lending",
+        "code": "PF"
+      },
+      "merged_from": [
+        "lending.specialised.project_finance"
+      ]
     },
     "lending.specialised.object_finance": {
       "name": "Object Finance",
@@ -1301,40 +1115,18 @@
         "general airline corporate loan"
       ],
       "synonyms": [],
-      "basel": {
-        "exposure_class": "specialised_lending",
-        "code": "OF"
-      },
       "yes_no_question": "Does the article describe a bank financing a specific aircraft, ship, railcar, or other physical asset, with repayment tied to that asset?",
       "criteria": {
         "true": "Aircraft, ship, rail, or equipment financing or leasing finance tied to specific assets is reported.",
         "false": "Aircraft or ship orders and deliveries, or a general loan to an airline or shipping company."
-      }
-    },
-    "lending.specialised.commodity_finance": {
-      "name": "Commodity Finance",
-      "type": "leaf",
-      "parent": "lending.specialised",
-      "definition": "Structured financing of commodity reserves, inventories, production, or transactions where repayment is closely linked to commodity cash flows.",
-      "includes": [
-        "reserve-based lending",
-        "commodity inventory finance",
-        "structured commodity finance"
-      ],
-      "excludes": [
-        "commodity derivatives trading",
-        "generic working-capital loan"
-      ],
-      "synonyms": [],
+      },
       "basel": {
         "exposure_class": "specialised_lending",
-        "code": "CF"
+        "code": "OF"
       },
-      "yes_no_question": "Does the article describe a bank financing commodity reserves, inventories, or trade flows, with repayment tied to the commodity?",
-      "criteria": {
-        "true": "Reserve-based lending, structured commodity finance, or inventory financing for commodity traders or producers is reported.",
-        "false": "Commodity prices or trading, or a general working-capital loan."
-      }
+      "merged_from": [
+        "lending.specialised.object_finance"
+      ]
     },
     "lending.cre": {
       "name": "Commercial Real Estate Lending",
@@ -1347,63 +1139,50 @@
         "commercial property sale without financing"
       ],
       "synonyms": [],
-      "children": [
-        "lending.cre.general",
-        "lending.cre.ipre",
-        "lending.cre.hvcre"
-      ],
       "yes_no_question": "Does the article describe a bank lending against commercial real estate such as offices, shopping centres, hotels, or development projects?",
       "criteria": {
         "true": "Commercial property loans, CRE loan books, or construction and development lending are reported.",
         "false": "Property prices or deals with no lending, CMBS, or home mortgages."
-      }
+      },
+      "merged_from": [
+        "lending.cre"
+      ],
+      "children": [
+        "lending.cre.general",
+        "lending.cre.hvcre"
+      ]
     },
     "lending.cre.general": {
-      "name": "General Commercial Real Estate Lending",
+      "name": "Commercial Property Lending",
       "type": "leaf",
       "parent": "lending.cre",
-      "definition": "CRE lending not specifically classified as IPRE or HVCRE.",
+      "definition": "Lending secured on completed commercial real estate, including income-producing offices, hotels, retail, and rental buildings.",
       "includes": [
         "commercial mortgage",
-        "CRE loan"
+        "CRE loan",
+        "office-property finance",
+        "hotel-property finance",
+        "rental-property finance"
       ],
       "excludes": [
         "CMBS",
-        "residential mortgage"
+        "residential mortgage",
+        "construction or development lending",
+        "commercial property sale without financing"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank making or holding loans secured on commercial property?",
+      "yes_no_question": "Does the article describe a bank making or holding loans secured on commercial property such as offices, shopping centres, hotels, or rental buildings?",
       "criteria": {
         "true": "Commercial mortgages, CRE loans, or a bank's commercial-property loan book are reported.",
-        "false": "Property deals without lending, CMBS, or home mortgages."
-      }
-    },
-    "lending.cre.ipre": {
-      "name": "Income-Producing Real Estate",
-      "type": "leaf",
-      "parent": "lending.cre",
-      "definition": "Real-estate lending where repayment materially depends on cash flows generated by the financed property.",
-      "includes": [
-        "rental-property finance",
-        "office-property finance",
-        "hotel-property finance"
-      ],
-      "excludes": [
-        "corporate loan not dependent on property cash flow"
-      ],
-      "synonyms": [],
-      "basel": {
-        "exposure_class": "specialised_lending",
-        "code": "IPRE"
+        "false": "Property deals without lending, CMBS, construction loans, or home mortgages."
       },
-      "yes_no_question": "Does the article describe a bank lending against an income-producing property, such as an office, hotel, or rental building, repaid from its rents?",
-      "criteria": {
-        "true": "Loans on rented or income-generating commercial property, where repayment depends on property income, are reported.",
-        "false": "Corporate loans not dependent on property income, or construction loans."
-      }
+      "merged_from": [
+        "lending.cre.general",
+        "lending.cre.ipre"
+      ]
     },
     "lending.cre.hvcre": {
-      "name": "High-Volatility Commercial Real Estate",
+      "name": "Construction & Development Lending",
       "type": "leaf",
       "parent": "lending.cre",
       "definition": "Higher-risk CRE acquisition, development, or construction financing meeting applicable high-volatility treatment.",
@@ -1415,96 +1194,52 @@
         "stabilised low-risk CRE lending"
       ],
       "synonyms": [],
-      "basel": {
-        "exposure_class": "specialised_lending",
-        "code": "HVCRE"
-      },
       "yes_no_question": "Does the article describe a bank financing the acquisition, development, or construction of commercial real estate?",
       "criteria": {
         "true": "Construction, development, or land-acquisition lending for commercial property is reported.",
         "false": "Loans on completed, stabilised properties."
-      }
+      },
+      "basel": {
+        "exposure_class": "specialised_lending",
+        "code": "HVCRE"
+      },
+      "merged_from": [
+        "lending.cre.hvcre"
+      ]
     },
     "lending.financial_institutions": {
       "name": "Financial Institutions Lending",
-      "type": "multi_label",
-      "parent": "business.lending",
-      "question": "Which financial-institution lending activities are materially described?",
-      "definition": "Loans or facilities to banks, broker-dealers, insurers, funds, asset managers, and other NBFIs.",
-      "includes": [],
-      "excludes": [
-        "central-bank emergency lending",
-        "interbank rate move"
-      ],
-      "synonyms": [],
-      "children": [
-        "lending.fi.banks",
-        "lending.fi.nbfis",
-        "lending.fi.funds"
-      ],
-      "yes_no_question": "Does the article describe a bank lending to other financial firms, such as banks, broker-dealers, insurers, finance companies, or investment funds?",
-      "criteria": {
-        "true": "Credit facilities or loans from a bank to a financial institution or fund are reported.",
-        "false": "Central-bank lending to banks, interbank rates, or trading between dealers."
-      }
-    },
-    "lending.fi.banks": {
-      "name": "Bank / Broker-Dealer Lending",
       "type": "leaf",
-      "parent": "lending.financial_institutions",
-      "definition": "Credit facilities or loans to banks, broker-dealers, or similar intermediaries.",
+      "parent": "business.lending",
+      "definition": "Loans or facilities to banks, broker-dealers, insurers, funds, asset managers, and other NBFIs.",
       "includes": [
         "bank loan",
-        "broker-dealer credit"
-      ],
-      "excludes": [
-        "interdealer securities trading"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank lending to another bank or to a broker-dealer?",
-      "criteria": {
-        "true": "Loans or credit lines from a bank to another bank or broker-dealer are reported.",
-        "false": "Central-bank lending, interbank rates, or trading between dealers."
-      }
-    },
-    "lending.fi.nbfis": {
-      "name": "NBFI / Insurance Lending",
-      "type": "leaf",
-      "parent": "lending.financial_institutions",
-      "definition": "Lending to insurers, finance companies, asset managers, or other NBFIs not better classified as fund finance.",
-      "includes": [
+        "broker-dealer credit",
         "insurance-company lending",
-        "finance-company lending"
-      ],
-      "excludes": [
-        "hedge-fund prime financing"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank lending to an insurer, finance company, asset manager, or other non-bank financial firm?",
-      "criteria": {
-        "true": "Credit facilities or loans from banks to non-bank financial institutions are reported.",
-        "false": "Hedge-fund prime brokerage, or lending to investment funds (fund finance)."
-      }
-    },
-    "lending.fi.funds": {
-      "name": "Fund Finance",
-      "type": "leaf",
-      "parent": "lending.financial_institutions",
-      "definition": "Lending to investment funds or fund vehicles, including subscription and NAV facilities.",
-      "includes": [
+        "finance-company lending",
         "subscription line",
         "NAV facility",
         "fund finance"
       ],
       "excludes": [
+        "central-bank emergency lending",
+        "interbank rate move",
+        "interdealer securities trading",
+        "hedge-fund prime financing",
         "prime brokerage margin financing"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank lending to an investment fund, such as a subscription line or NAV facility for a private-equity fund?",
+      "yes_no_question": "Does the article describe a bank lending to other financial firms, such as banks, broker-dealers, insurers, finance companies, or investment funds?",
       "criteria": {
-        "true": "Subscription lines, capital-call facilities, NAV loans, or other fund-level lending are reported.",
-        "false": "Prime brokerage or margin financing of hedge funds, or fund performance news."
-      }
+        "true": "Credit facilities or loans from a bank to a financial institution or fund are reported.",
+        "false": "Central-bank lending, interbank rates, trading between dealers, or prime brokerage and margin financing of hedge funds."
+      },
+      "merged_from": [
+        "lending.financial_institutions",
+        "lending.fi.banks",
+        "lending.fi.nbfis",
+        "lending.fi.funds"
+      ]
     },
     "lending.sovereign_public": {
       "name": "Sovereign / Public Sector Lending",
@@ -1526,253 +1261,111 @@
       "criteria": {
         "true": "A bank loan or credit facility to a government, state entity, municipality, or public institution is reported.",
         "false": "Government bond trading or issuance, or IMF/multilateral lending without banks."
-      }
+      },
+      "merged_from": [
+        "lending.sovereign_public"
+      ]
     },
     "lending.trade_working_capital": {
-      "name": "Trade & Working Capital Finance",
-      "type": "multi_label",
+      "name": "Trade, Working-Capital & Commodity Finance",
+      "type": "leaf",
       "parent": "business.lending",
-      "question": "Which trade or working-capital finance activities are materially described?",
-      "definition": "Trade-related lending, guarantees, letters of credit, supply-chain finance, receivables finance, and related facilities.",
-      "includes": [],
-      "excludes": [
-        "trade statistics or tariffs"
-      ],
-      "synonyms": [],
-      "children": [
-        "lending.trade.trade_loans",
-        "lending.trade.lc_guarantees",
-        "lending.trade.receivables_supply_chain"
-      ],
-      "yes_no_question": "Does the article describe a bank providing trade finance, letters of credit, guarantees, or supply-chain or receivables financing?",
-      "criteria": {
-        "true": "Trade loans, letters of credit, bank guarantees, factoring, or supply-chain finance are reported.",
-        "false": "Trade data or tariffs without bank financing."
-      }
-    },
-    "lending.trade.trade_loans": {
-      "name": "Trade Loans",
-      "type": "leaf",
-      "parent": "lending.trade_working_capital",
-      "definition": "Short-term lending supporting import, export, inventory, or trade transactions.",
+      "definition": "Trade loans, letters of credit, guarantees, receivables and supply-chain finance, and structured financing of commodity inventories, reserves, or trade flows.",
       "includes": [
-        "import loan",
+        "trade loan",
         "export loan",
-        "trade loan"
-      ],
-      "excludes": [
-        "general corporate term loan"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank providing short-term loans to finance imports, exports, or traded goods?",
-      "criteria": {
-        "true": "Import, export, pre-export, or other trade loans are reported.",
-        "false": "General corporate term loans or trade statistics."
-      }
-    },
-    "lending.trade.lc_guarantees": {
-      "name": "Letters of Credit / Guarantees",
-      "type": "leaf",
-      "parent": "lending.trade_working_capital",
-      "definition": "Documentary/standby letters of credit, guarantees, and similar contingent trade facilities.",
-      "includes": [
         "letter of credit",
-        "standby LC",
-        "bank guarantee"
-      ],
-      "excludes": [
-        "ordinary funded loan"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank issuing letters of credit or guarantees for a client?",
-      "criteria": {
-        "true": "Documentary or standby letters of credit, or bank guarantees, are reported.",
-        "false": "Funded loans, or government guarantees without a bank issuing them."
-      }
-    },
-    "lending.trade.receivables_supply_chain": {
-      "name": "Receivables / Supply-Chain Finance",
-      "type": "leaf",
-      "parent": "lending.trade_working_capital",
-      "definition": "Financing based on trade receivables, invoices, payables, or supply-chain arrangements.",
-      "includes": [
-        "receivables finance",
-        "invoice finance",
+        "bank guarantee",
+        "factoring",
         "supply-chain finance",
-        "factoring"
+        "reserve-based lending",
+        "commodity inventory finance"
       ],
       "excludes": [
-        "securities financing",
+        "trade statistics or tariffs",
+        "commodity derivatives trading",
+        "general corporate term loan",
         "supply-chain disruption news"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank financing a company's invoices, receivables, or supplier payments, such as factoring or supply-chain finance?",
+      "yes_no_question": "Does the article describe a bank providing trade finance, letters of credit, guarantees, supply-chain or receivables financing, or financing of commodity inventories, reserves, or trade flows?",
       "criteria": {
-        "true": "Receivables finance, invoice finance, factoring, or supply-chain finance programmes are reported.",
-        "false": "Securities financing, or supply-chain disruption news without financing."
-      }
+        "true": "Trade or export loans, letters of credit, bank guarantees, factoring, supply-chain finance, or structured commodity or reserve-based financing is reported.",
+        "false": "Trade statistics, tariffs, or commodity prices without bank financing, or commodity derivatives trading."
+      },
+      "basel": {
+        "note": "absorbs Basel specialised-lending commodity finance (CF)"
+      },
+      "merged_from": [
+        "lending.trade_working_capital",
+        "lending.trade.trade_loans",
+        "lending.trade.lc_guarantees",
+        "lending.trade.receivables_supply_chain",
+        "lending.specialised.commodity_finance"
+      ]
     },
     "lending.consumer": {
       "name": "Consumer Lending",
-      "type": "multi_label",
-      "parent": "business.lending",
-      "question": "Which consumer-lending activities are materially described?",
-      "definition": "Credit extended to individuals for non-mortgage consumer purposes.",
-      "includes": [],
-      "excludes": [
-        "retail sales data"
-      ],
-      "synonyms": [],
-      "children": [
-        "lending.consumer.cards",
-        "lending.consumer.auto",
-        "lending.consumer.personal"
-      ],
-      "yes_no_question": "Does the article describe a bank or lender providing credit to individuals through credit cards, car loans, or personal loans?",
-      "criteria": {
-        "true": "Consumer lending, card balances, auto loans, or personal-loan books are reported.",
-        "false": "Consumer spending data without credit, or home mortgages."
-      }
-    },
-    "lending.consumer.cards": {
-      "name": "Credit Cards",
       "type": "leaf",
-      "parent": "lending.consumer",
-      "definition": "Consumer revolving credit-card lending and related receivables.",
+      "parent": "business.lending",
+      "definition": "Credit extended to individuals for non-mortgage consumer purposes.",
       "includes": [
         "credit-card loans",
-        "card receivables"
-      ],
-      "excludes": [
-        "debit-card processing without credit"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or card issuer lending to consumers through credit cards?",
-      "criteria": {
-        "true": "Credit-card lending, card balances, or card loan losses are reported.",
-        "false": "Payment processing or debit cards without credit."
-      }
-    },
-    "lending.consumer.auto": {
-      "name": "Auto Lending",
-      "type": "leaf",
-      "parent": "lending.consumer",
-      "definition": "Consumer lending used to finance automobiles or personal vehicles.",
-      "includes": [
+        "card receivables",
         "auto loan",
-        "car finance"
-      ],
-      "excludes": [
-        "commercial fleet object finance",
-        "car sales data"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or lender financing consumers' car or vehicle purchases?",
-      "criteria": {
-        "true": "Auto loans or car finance to consumers are reported.",
-        "false": "Car sales without financing, or commercial fleet financing."
-      }
-    },
-    "lending.consumer.personal": {
-      "name": "Personal Lending",
-      "type": "leaf",
-      "parent": "lending.consumer",
-      "definition": "Personal consumer lending not classified as cards, auto, or residential mortgage.",
-      "includes": [
+        "car finance",
         "personal loan",
         "consumer installment loan"
       ],
       "excludes": [
+        "retail sales data",
+        "debit-card processing without credit",
+        "commercial fleet object finance",
         "mortgage",
         "corporate loan"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or lender making personal loans or instalment loans to individuals?",
+      "yes_no_question": "Does the article describe a bank or lender providing credit to individuals through credit cards, car loans, or personal loans?",
       "criteria": {
-        "true": "Personal or consumer instalment lending is reported.",
-        "false": "Mortgages, credit cards, car loans, or loans to companies."
-      }
+        "true": "Consumer lending, card balances, auto loans, or personal-loan books are reported.",
+        "false": "Consumer spending data without credit, or home mortgages."
+      },
+      "merged_from": [
+        "lending.consumer",
+        "lending.consumer.cards",
+        "lending.consumer.auto",
+        "lending.consumer.personal"
+      ]
     },
     "lending.residential_mortgage": {
       "name": "Residential Mortgage Lending",
-      "type": "multi_label",
-      "parent": "business.lending",
-      "question": "Which residential-mortgage lending activities are materially described?",
-      "definition": "Credit secured by residential real estate, including owner-occupied, income-producing residential property, and home-equity credit.",
-      "includes": [],
-      "excludes": [
-        "house prices without lending"
-      ],
-      "synonyms": [],
-      "children": [
-        "lending.mortgage.owner_occupied",
-        "lending.mortgage.income_producing",
-        "lending.mortgage.home_equity"
-      ],
-      "yes_no_question": "Does the article describe a bank or lender providing home loans secured on residential property?",
-      "criteria": {
-        "true": "Residential mortgage lending, mortgage books, or home-equity credit is reported.",
-        "false": "House prices or housing starts without lending, or mortgage-backed securities."
-      }
-    },
-    "lending.mortgage.owner_occupied": {
-      "name": "Owner-Occupied Residential Mortgage",
       "type": "leaf",
-      "parent": "lending.residential_mortgage",
-      "definition": "Mortgage lending secured by a residence primarily occupied by the borrower.",
+      "parent": "business.lending",
+      "definition": "Credit secured by residential real estate, including owner-occupied, income-producing residential property, and home-equity credit.",
       "includes": [
         "home mortgage",
-        "owner-occupied mortgage"
-      ],
-      "excludes": [
-        "buy-to-let mortgage",
-        "RMBS"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or lender providing mortgages to people buying homes to live in?",
-      "criteria": {
-        "true": "Owner-occupied home-loan lending, approvals, or mortgage books are reported.",
-        "false": "Buy-to-let mortgages, mortgage-backed securities, or house prices alone."
-      }
-    },
-    "lending.mortgage.income_producing": {
-      "name": "Income-Producing Residential Mortgage",
-      "type": "leaf",
-      "parent": "lending.residential_mortgage",
-      "definition": "Residential mortgage lending where repayment materially depends on rental or other property income.",
-      "includes": [
-        "buy-to-let mortgage",
-        "rental-property mortgage"
-      ],
-      "excludes": [
         "owner-occupied mortgage",
-        "commercial CRE loan"
-      ],
-      "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or lender providing buy-to-let or other mortgages on residential property rented out to tenants?",
-      "criteria": {
-        "true": "Buy-to-let or rental-property residential mortgage lending is reported.",
-        "false": "Owner-occupied mortgages, or commercial property loans."
-      }
-    },
-    "lending.mortgage.home_equity": {
-      "name": "Home Equity Lending",
-      "type": "leaf",
-      "parent": "lending.residential_mortgage",
-      "definition": "Consumer credit secured by accumulated equity in residential property.",
-      "includes": [
+        "buy-to-let mortgage",
         "home-equity loan",
         "HELOC"
       ],
       "excludes": [
-        "first-lien purchase mortgage"
+        "house prices without lending",
+        "RMBS",
+        "commercial CRE loan"
       ],
       "synonyms": [],
-      "yes_no_question": "Does the article describe a bank or lender providing home-equity loans or lines of credit secured on homeowners' equity?",
+      "yes_no_question": "Does the article describe a bank or lender providing home loans secured on residential property?",
       "criteria": {
-        "true": "Home-equity loans or HELOCs are reported.",
-        "false": "First-lien purchase mortgages."
-      }
+        "true": "Residential mortgage lending, mortgage books, or home-equity credit is reported.",
+        "false": "House prices or housing starts without lending, or mortgage-backed securities."
+      },
+      "merged_from": [
+        "lending.residential_mortgage",
+        "lending.mortgage.owner_occupied",
+        "lending.mortgage.income_producing",
+        "lending.mortgage.home_equity"
+      ]
     }
   }
 }

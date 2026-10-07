@@ -28,9 +28,9 @@ corpus:
     canonical_rule: earliest_date_then_article_id
 
 ontology:
-  path: gsib_basel_ontology_v1.0.json
-  version: "1.0.0"
-  sha256: "80a355a7fc2d0e50c74c1741b8903b5fc2e9dd923db37230212c4bec28d3228e"
+  path: gsib_basel_ontology_v1.1.json
+  version: "1.1.0"
+  sha256: "398f4297c05d22df6fa17301dbeafa30ce2af2ba52fd643d6a691f558b6814d8"
 
 input:
   mode: headline_plus_article
@@ -53,6 +53,12 @@ hierarchy:
   materialize_skipped_by_routing: false
 
 templates:
+  # Frozen 2026-10-07 by the pre-declared rule (spec §0.8): max over templates of the
+  # minimum dev-set balanced accuracy across Jev, Laya, d1 and Clef.
+  boolean_v2c:
+    kind: boolean
+    path: templates/decision/boolean_v2c.txt
+    sha256: "c2fa018b7cdb7813f8f67b1d1c4ea158dfc857b1709c8fbba77df982908d2b4f"
   boolean_v1:
     kind: boolean
     path: templates/decision/boolean_v1.txt
@@ -70,7 +76,7 @@ models:
     model: typesafe-ai/jev
     provider_lock: [typesafe-ai]
     api_key_env: VERCEL_API_KEY
-    template: boolean_v1
+    template: boolean_v2c
     timeout_seconds: 60
     retries: 6
     concurrency: 32
@@ -84,7 +90,7 @@ models:
     model: convaiinnovations/laya
     provider_lock: [boundless]
     api_key_env: VERCEL_API_KEY
-    template: boolean_v1
+    template: boolean_v2c
     timeout_seconds: 60
     retries: 6
     concurrency: 32
@@ -98,7 +104,7 @@ models:
     model: liquid/d1
     provider_lock: [liquid]
     api_key_env: VERCEL_API_KEY
-    template: boolean_v1
+    template: boolean_v2c
     timeout_seconds: 60
     retries: 6
     concurrency: 32
@@ -118,7 +124,7 @@ models:
     account_id_env: CLOUDFLARE_ACCOUNT_ID
     price_per_m_input_tokens: 0.24
     expected_model_returned: clef      # pinned from live probe 2026-10-07
-    template: boolean_v1
+    template: boolean_v2c
     timeout_seconds: 60
     retries: 6
     concurrency: 32

@@ -35,7 +35,7 @@ async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(ROOT / "configs/classification.yaml"))
     ap.add_argument("--ontology", default=str(ROOT / "gsib_basel_ontology_v1.1.json"))
-    ap.add_argument("--cases", default=str(devset.DEFAULT_CASES))
+    ap.add_argument("--cases", default=None, help="default: the dev cases matching the ontology version")
     ap.add_argument("--templates", nargs="+", default=["boolean_v1", "boolean_v2a", "boolean_v2b", "boolean_v2c"])
     ap.add_argument("--models", nargs="+", default=["jev", "laya", "d1", "clef"])
     ap.add_argument("--out", default=None, help="optional JSON dump of all scores")
@@ -44,7 +44,7 @@ async def main() -> None:
     load_dotenv(ROOT / ".env")
     cfg = load_config(args.config)
     onto = load_ontology(args.ontology)
-    cases = devset.load_cases(args.cases)
+    cases = devset.load_cases(args.cases) if args.cases else devset.cases_for(onto)
 
     models, skipped = [], []
     for m in args.models:

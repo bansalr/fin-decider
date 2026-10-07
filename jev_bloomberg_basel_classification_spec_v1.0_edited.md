@@ -138,12 +138,42 @@ not materialized). Work shards live under `_work/`; the final
 
 ### 0.8 Ontology v1.1 and the shared decision template
 
-`gsib_basel_ontology_v1.1.json` keeps v1.0's node IDs, hierarchy,
-names and types unchanged, and adds to every non-root node a plain
-`yes_no_question` and `criteria` (`true`/`false`), and further
-`excludes` for known hard boundaries. It is generated from
-`ontology/v1.1_additions.yaml` by `ontology/build_v1_1.py`; v1.0 is not
-modified.
+`gsib_basel_ontology_v1.1.json` consolidates v1.0 from 79 nodes (59
+leaves) to 48 nodes (33 leaves) and adds to every non-root node a plain
+`yes_no_question` and `criteria` (`true`/`false`), plus further
+`excludes` for known hard boundaries. The relevance root and the three
+business arms are unchanged. Every v1.1 node lists the v1.0 nodes it
+replaces in `merged_from`, and every v1.0 node is covered, so v1.0-level
+analyses can be mapped onto v1.1. The editable source is
+`ontology/v1.1_nodes.yaml`, built by `ontology/build_v1_1.py`; v1.0 is
+not modified.
+
+Consolidation rule: a leaf whose activity is rare in the corpus is
+merged into its closest sibling where the boundary is already fuzzy,
+and a family whose children are all rare or overlapping becomes a
+single leaf. Rarity was estimated by regex term matching over the 445,391
+canonical articles (`scripts/term_prevalence.py`;
+`ontology/term_prevalence_v1.0.json`), counting articles that contain a
+node's characteristic terms and name a bank or dealer. These are rough
+prevalence indicators, not labels, and no model output was used.
+
+Merges: funding + liquidity; structural rates + structural FX;
+inflation and EM macro into rates and FX; IG + HY/distressed (cash
+credit); structured credit into credit derivatives; structured equity
+into equity derivatives; RMBS + CMBS; prime, margin, securities lending
+and synthetic financing; large + middle-market corporate; bridge into
+acquisition finance; IPRE into general CRE; commodity finance into trade
+and working capital. Collapsed to single leaves: derivatives/XVA,
+financial-institutions lending, trade and working capital, consumer,
+residential mortgage. Kept separate despite modest prevalence because
+they mark hard, frequently confused boundaries: project vs object
+finance, repo vs prime services, SME vs large corporate, construction vs
+completed CRE, sovereign lending.
+
+The synthetic dev set exists in two versions keyed to node IDs:
+`template_cases_v1.jsonl` (v1.0) and `template_cases_v2.jsonl` (v1.1,
+remapped through `merged_from`; a merged node is positive if any source
+was).
 
 Motivation: live probes showed decision models differ sharply in
 sensitivity to question form. With v1.0's fields rendered as a long
@@ -155,10 +185,25 @@ The shared decision template is chosen on a synthetic development set
 (`dev/template_cases_v1.jsonl`; short constructed articles, none drawn
 from the Bloomberg corpus) by a pre-declared rule: the candidate with
 the highest minimum balanced accuracy at 0.5 across Jev, Laya and d1,
-ties broken by fewer tokens. Candidates: `boolean_v1`, `boolean_v2a`
+ties broken by fewer tokens, scored across all decision models (Jev, Laya, d1, Clef). Candidates: `boolean_v1`, `boolean_v2a`
 (question + criteria), `boolean_v2b` (+ exclusions line),
 `boolean_v2c` (question only). The selected template is frozen before
 any corpus run. Tooling: `scripts/template_check.py`.
+
+Result on the consolidated v1.1 ontology (32 cases, 95 labelled checks;
+balanced accuracy at 0.5):
+
+| template | Jev | Laya | d1 | Clef | min | tokens/request |
+|---|---|---|---|---|---|---|
+| `boolean_v1` | 0.964 | 0.637 | 0.942 | 0.938 | 0.637 | 637 |
+| `boolean_v2a` | 0.986 | 0.714 | 0.932 | 0.959 | 0.714 | 458 |
+| `boolean_v2b` | 0.973 | 0.624 | 0.946 | 0.959 | 0.624 | 515 |
+| `boolean_v2c` | 0.973 | 0.720 | 0.932 | 0.959 | **0.720** | 330 |
+
+**Selected and frozen: `boolean_v2c`** (the node's `yes_no_question`
+alone). Its SHA-256 is in `configs/classification.yaml` and every run
+identity. The minimum is set by Laya under every candidate; Jev, d1 and
+Clef stay at 0.93–0.99 throughout.
 
 Observed on the draft ontology: Jev and d1 scored 0.95–0.99 on every
 candidate; Laya 0.65–0.73, mostly through false positives on sibling

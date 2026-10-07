@@ -78,7 +78,7 @@ def test_run_identity_corpus_and_template(small_cfg, tmp_path):
     (tmp_path / "corpus/manifest.json").write_text(json.dumps(m))
     assert prepare_run(cfg, model="jev", limit=None).run_hash != base
     with pytest.raises(ValueError):
-        prepare_run(variant(d, ["templates", "boolean_v1", "sha256"], "e" * 64), model="jev", limit=None)
+        prepare_run(variant(d, ["templates", "boolean_v2c", "sha256"], "e" * 64), model="jev", limit=None)
 
 
 async def test_run_and_resume(small_cfg):

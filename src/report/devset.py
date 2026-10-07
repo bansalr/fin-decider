@@ -16,11 +16,21 @@ from classifier.adapters.base import ArticleInput, ClassificationAdapter, Classi
 from classifier.ontology import Ontology
 from classifier.provenance import sha256_text
 
-DEFAULT_CASES = Path(__file__).resolve().parents[2] / "dev" / "template_cases_v1.jsonl"
+DEV = Path(__file__).resolve().parents[2] / "dev"
+# Dev cases are labelled with node IDs, so each ontology version has its own file.
+# v2 is v1 remapped through v1.1's merged_from (a merged node is positive if any source was).
+CASES_BY_ONTOLOGY = {"1.0.0": DEV / "template_cases_v1.jsonl", "1.1.0": DEV / "template_cases_v2.jsonl"}
+DEFAULT_CASES = CASES_BY_ONTOLOGY["1.1.0"]
 
 
 def load_cases(path: str | Path = DEFAULT_CASES) -> list[dict]:
     return [json.loads(x) for x in Path(path).read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
+def cases_for(onto: Ontology) -> list[dict]:
+    if onto.version not in CASES_BY_ONTOLOGY:
+        raise ValueError(f"no dev cases for ontology {onto.version}")
+    return load_cases(CASES_BY_ONTOLOGY[onto.version])
 
 
 def level_of(onto: Ontology, child_id: str) -> str:
@@ -45,7 +55,7 @@ def rates(pairs: list[tuple[int, float]], t: float = 0.5) -> dict[str, float | i
 
 async def evaluate(adapter: ClassificationAdapter, ctx: ClassificationContext, onto: Ontology,
                    cases: list[dict] | None = None, concurrency: int = 8) -> dict[str, Any]:
-    cases = cases if cases is not None else load_cases()
+    cases = cases if cases is not None else cases_for(onto)
     jobs: dict[tuple[str, str], dict[str, int]] = defaultdict(dict)
     for c in cases:
         for child, y in c["expect"].items():
