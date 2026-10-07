@@ -58,12 +58,15 @@ class HttpDecisionAdapter(ClassificationAdapter):
                  sleep=asyncio.sleep):
         self.model_key = model_key
         self.cfg = cfg
-        key = os.environ.get(cfg.api_key_env or "")
-        if not key:
-            raise FatalProviderError(f"environment variable {cfg.api_key_env} is not set")
+        headers = {"Content-Type": "application/json"}
+        if cfg.api_key_env:  # self-hosted servers may run without auth
+            key = os.environ.get(cfg.api_key_env)
+            if not key:
+                raise FatalProviderError(f"environment variable {cfg.api_key_env} is not set")
+            headers["Authorization"] = f"Bearer {key}"
         self._client = httpx.AsyncClient(
             base_url=cfg.endpoint or "",
-            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            headers=headers,
             timeout=cfg.timeout_seconds,
             transport=transport,
             limits=httpx.Limits(max_connections=cfg.concurrency * 2, max_keepalive_connections=cfg.concurrency * 2),

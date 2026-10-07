@@ -120,8 +120,8 @@ class Template(Strict):
 
 class ModelCfg(Strict):
     enabled: bool
-    adapter: Literal["jev", "laya", "d1", "clef", "fake"]
-    provider: Literal["vercel_ai_gateway", "cloudflare_workers_ai", "local"]
+    adapter: Literal["jev", "laya", "d1", "clef", "systemone", "fake"]
+    provider: Literal["vercel_ai_gateway", "cloudflare_workers_ai", "local_server", "local"]
     endpoint: str | None
     model: str
     provider_lock: list[str]
@@ -138,7 +138,11 @@ class ModelCfg(Strict):
     # Cloudflare Workers AI only
     account_id_env: str | None = None
     price_per_m_input_tokens: float | None = Field(default=None, ge=0)  # cost estimate; provider reports none
-    expected_model_returned: str | None = None  # pinned from the first live probe
+    expected_model_returned: str | None = None  # pinned from the first live probe / server config
+    # Self-hosted open-weight servers (local_server) only
+    revisions: dict[str, str] | None = None  # HF repo -> 40-hex commit for every weight file served
+    quantization: Literal["none", "bnb8"] | None = None
+    request_model: str | None = None  # value sent as `model` in the request body
 
     @field_validator("model")
     @classmethod
@@ -154,8 +158,19 @@ class ModelCfg(Strict):
             raise ValueError(f"{self.provider} models need endpoint and api_key_env")
         if self.provider == "cloudflare_workers_ai" and not self.account_id_env:
             raise ValueError("cloudflare_workers_ai models need account_id_env")
-        if self.provider != "cloudflare_workers_ai" and (self.account_id_env or self.expected_model_returned):
-            raise ValueError("account_id_env/expected_model_returned are only valid for cloudflare_workers_ai")
+        if self.account_id_env and self.provider != "cloudflare_workers_ai":
+            raise ValueError("account_id_env is only valid for cloudflare_workers_ai")
+        if self.expected_model_returned and self.provider not in ("cloudflare_workers_ai", "local_server"):
+            raise ValueError("expected_model_returned is only valid for cloudflare_workers_ai and local_server")
+        local = (self.revisions, self.quantization, self.request_model)
+        if self.provider == "local_server":
+            if not self.endpoint or not self.revisions or not self.quantization or not self.expected_model_returned:
+                raise ValueError("local_server models need endpoint, revisions, quantization, expected_model_returned")
+            bad = {k: v for k, v in self.revisions.items() if not GIT_SHA_RE.match(v)}
+            if bad:
+                raise ValueError(f"revisions must be 40-hex commit SHAs: {bad}")
+        elif any(x is not None for x in local):
+            raise ValueError("revisions/quantization/request_model are only valid for local_server")
         return self
 
 

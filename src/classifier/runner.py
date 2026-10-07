@@ -25,7 +25,7 @@ from .templates import load_template
 from .traversal import classify_article
 
 # Operational knobs that do not change any classification; excluded from identity hashes.
-NON_MATERIAL_MODEL_FIELDS = {"concurrency", "retries", "timeout_seconds", "price_per_m_input_tokens", "expected_model_returned"}
+NON_MATERIAL_MODEL_FIELDS = {"concurrency", "retries", "timeout_seconds", "price_per_m_input_tokens", "expected_model_returned", "endpoint"}
 NON_MATERIAL_RUN_FIELDS = {"allow_dirty_git", "label"}
 NON_MATERIAL_OUTPUT_FIELDS = {"directory", "shard_rows"}
 SNAPSHOT_FIELDS = ("id", "type", "context_window", "released", "owned_by")
@@ -120,6 +120,8 @@ async def model_snapshot(cfg: Config, model: str) -> dict[str, Any]:
 
     if m.provider == "cloudflare_workers_ai":
         return await _workers_ai_snapshot(m)
+    if m.provider == "local_server":
+        return await _local_server_snapshot(m)
     if m.provider != "vercel_ai_gateway":
         return {"id": m.model, "provider": m.provider}
 
@@ -131,6 +133,26 @@ async def model_snapshot(cfg: Config, model: str) -> dict[str, Any]:
         raise FatalProviderError(f"model {m.model} not listed by the gateway")
     e = entries[0]
     return {k: e.get(k) for k in SNAPSHOT_FIELDS} | {"pricing": e.get("pricing")}
+
+
+async def _local_server_snapshot(m) -> dict[str, Any]:
+    """Self-hosted server: pinned weight revisions, quantization, the server's own /health
+    report, and the accelerator it runs on. Endpoint is operational and not hashed."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.get(f"{m.endpoint}/health")
+        r.raise_for_status()
+        health = r.json()
+    snap = {"id": m.model, "provider": m.provider, "revisions": m.revisions, "quantization": m.quantization,
+            "health": {k: v for k, v in health.items() if k not in ("status", "uptime_s", "requests")}}
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            snap["accelerator"] = {"gpu": torch.cuda.get_device_name(0), "cuda": torch.version.cuda,
+                                   "torch": torch.__version__}
+    except ImportError:
+        pass
+    return snap
 
 
 async def _workers_ai_snapshot(m) -> dict[str, Any]:
@@ -227,7 +249,7 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
         raise ValueError(f"model {model} is disabled in config")
     if adapter is None:
         check_credentials(cfg, [model])
-        if mcfg.provider == "cloudflare_workers_ai" and not mcfg.expected_model_returned:
+        if mcfg.provider in ("cloudflare_workers_ai", "local_server") and not mcfg.expected_model_returned:
             raise RuntimeError(f"{model}: set expected_model_returned from `classify probe -m {model}` before running")
 
     man = load_or_init_manifest(rc)
