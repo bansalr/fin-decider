@@ -34,19 +34,18 @@ def build() -> dict:
     out["ontology"]["version"] = "1.1.0"
     out["ontology"]["changes_from"] = "1.0.0"
     out["ontology"]["changes"] = (
-        "Adds per-node label, yes_no_question and criteria{true,false}, and appends exclusions "
+        "Adds per-node yes_no_question and criteria{true,false}, and appends exclusions "
         "for known hard boundaries. Node IDs, hierarchy, names and types are unchanged."
     )
     for nid in non_root:
         a = adds[nid]
-        for f in ("label", "q", "when_true", "when_false"):
+        for f in ("q", "when_true", "when_false"):
             if not isinstance(a.get(f), str) or not a[f].strip():
                 sys.exit(f"{nid}: missing '{f}'")
-        extra = set(a) - {"label", "q", "when_true", "when_false", "add_excludes"}
+        extra = set(a) - {"q", "when_true", "when_false", "add_excludes"}
         if extra:
             sys.exit(f"{nid}: unknown keys {sorted(extra)}")
         n = out["nodes"][nid]
-        n["label"] = a["label"].strip()
         n["yes_no_question"] = a["q"].strip()
         n["criteria"] = {"true": a["when_true"].strip(), "false": a["when_false"].strip()}
         for ex in a.get("add_excludes") or []:
@@ -78,7 +77,6 @@ def review(onto: dict) -> str:
         if old_ex or new_ex:
             parts = list(old_ex) + [f"**{e}**" for e in new_ex]
             lines.append(f"- Excludes: {'; '.join(parts)}")
-        lines.append(f"- **Label:** {n['label']}")
         lines.append(f"- **Question:** {n['yes_no_question']}")
         lines.append(f"- **True:** {n['criteria']['true']}")
         lines.append(f"- **False:** {n['criteria']['false']}")

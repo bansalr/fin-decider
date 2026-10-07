@@ -35,7 +35,6 @@ class OntologyNode:
     children: tuple[str, ...]
     basel: Any = None
     yes_no_question: str | None = None  # v1.1+
-    label: str | None = None  # v1.1+: short plain phrase for encoder classifiers
     criteria: tuple[tuple[str, str], ...] = ()  # v1.1+: (("false", ...), ("true", ...))
 
     @property
@@ -58,8 +57,6 @@ class OntologyNode:
         }
         if self.yes_no_question is not None:
             ir["yes_no_question"] = self.yes_no_question
-        if self.label is not None:
-            ir["label"] = self.label
         if self.criteria:
             ir["criteria"] = self.criteria_dict
         return ir
@@ -136,7 +133,6 @@ def build_ontology(raw: dict[str, Any], digest: str) -> Ontology:
             children=tuple(spec.get("children", [])),
             basel=spec.get("basel"),
             yes_no_question=spec.get("yes_no_question"),
-            label=spec.get("label"),
             criteria=tuple(sorted((spec.get("criteria") or {}).items())),
         )
 

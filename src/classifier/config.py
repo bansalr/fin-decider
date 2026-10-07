@@ -120,8 +120,8 @@ class Template(Strict):
 
 class ModelCfg(Strict):
     enabled: bool
-    adapter: Literal["jev", "laya", "d1", "gliclass", "fake"]
-    provider: Literal["vercel_ai_gateway", "local"]
+    adapter: Literal["jev", "laya", "d1", "clef", "fake"]
+    provider: Literal["vercel_ai_gateway", "cloudflare_workers_ai", "local"]
     endpoint: str | None
     model: str
     provider_lock: list[str]
@@ -131,13 +131,10 @@ class ModelCfg(Strict):
     retries: int = Field(ge=0, le=20)
     concurrency: int = Field(ge=1, le=512)
     allow_returned_model_mismatch: bool
-    # Local models only
-    revision: str | None = None
-    device: str | None = None
-    dtype: Literal["float32", "float16", "bfloat16"] | None = None
-    max_length: int | None = Field(default=None, ge=32, le=8192)
-    batch_size: int | None = Field(default=None, ge=1, le=1024)
-    batch_wait_ms: float | None = Field(default=None, ge=0, le=1000)
+    # Cloudflare Workers AI only
+    account_id_env: str | None = None
+    price_per_m_input_tokens: float | None = Field(default=None, ge=0)  # cost estimate; provider reports none
+    expected_model_returned: str | None = None  # pinned from the first live probe
 
     @field_validator("model")
     @classmethod
@@ -149,18 +146,12 @@ class ModelCfg(Strict):
 
     @model_validator(mode="after")
     def _provider_fields(self) -> "ModelCfg":
-        local = ("revision", "device", "dtype", "max_length", "batch_size", "batch_wait_ms")
-        if self.provider == "vercel_ai_gateway":
-            if not self.endpoint or not self.api_key_env:
-                raise ValueError("vercel_ai_gateway models need endpoint and api_key_env")
-            if any(getattr(self, f) is not None for f in local):
-                raise ValueError(f"local-model fields {local} are not valid for gateway models")
-        if self.provider == "local" and self.adapter != "fake":
-            missing = [f for f in local if getattr(self, f) is None]
-            if missing:
-                raise ValueError(f"local model needs {missing}")
-            if not GIT_SHA_RE.match(self.revision or ""):
-                raise ValueError(f"local model revision must be a 40-hex commit SHA, got {self.revision!r}")
+        if self.provider in ("vercel_ai_gateway", "cloudflare_workers_ai") and (not self.endpoint or not self.api_key_env):
+            raise ValueError(f"{self.provider} models need endpoint and api_key_env")
+        if self.provider == "cloudflare_workers_ai" and not self.account_id_env:
+            raise ValueError("cloudflare_workers_ai models need account_id_env")
+        if self.provider != "cloudflare_workers_ai" and (self.account_id_env or self.expected_model_returned):
+            raise ValueError("account_id_env/expected_model_returned are only valid for cloudflare_workers_ai")
         return self
 
 
@@ -218,9 +209,10 @@ def load_config(path: str | Path, overrides: list[str] | None = None) -> Config:
 
 def check_credentials(cfg: Config, models: list[str]) -> None:
     missing = [
-        cfg.models[m].api_key_env
+        env
         for m in models
-        if cfg.models[m].api_key_env and not os.environ.get(cfg.models[m].api_key_env)  # type: ignore[arg-type]
+        for env in (cfg.models[m].api_key_env, cfg.models[m].account_id_env)
+        if env and not os.environ.get(env)
     ]
     if missing:
         raise RuntimeError(f"missing credentials in environment: {sorted(set(missing))}")

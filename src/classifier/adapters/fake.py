@@ -24,6 +24,7 @@ class FakeAdapter(ClassificationAdapter):
             if c.id in self.overrides:
                 scores[c.id] = self.overrides[c.id]
             else:
-                scores[c.id] = int(sha256_text(article.input_hash + c.id)[:8], 16) / 0xFFFFFFFF
+                # Seeded by model key so different fake models disagree, as real ones would.
+                scores[c.id] = int(sha256_text(self.model_key + article.input_hash + c.id)[:8], 16) / 0xFFFFFFFF
         return NodeDecision(node_id=node.id, scores=scores, model_returned=ctx.model_id, routing_provider="local",
                             latency_ms=0.0, input_tokens=0, output_tokens=0, cost_usd=0.0)

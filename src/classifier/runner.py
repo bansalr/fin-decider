@@ -25,7 +25,7 @@ from .templates import load_template
 from .traversal import classify_article
 
 # Operational knobs that do not change any classification; excluded from identity hashes.
-NON_MATERIAL_MODEL_FIELDS = {"concurrency", "retries", "timeout_seconds", "device", "batch_size", "batch_wait_ms"}
+NON_MATERIAL_MODEL_FIELDS = {"concurrency", "retries", "timeout_seconds", "price_per_m_input_tokens", "expected_model_returned"}
 NON_MATERIAL_RUN_FIELDS = {"allow_dirty_git", "label"}
 NON_MATERIAL_OUTPUT_FIELDS = {"directory", "shard_rows"}
 SNAPSHOT_FIELDS = ("id", "type", "context_window", "released", "owned_by")
@@ -71,6 +71,7 @@ class RunContext:
     run_dir: Path
     git: dict[str, Any]
     scope: dict[str, Any]
+    dry_run: bool = False
 
 
 def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path = Path(".")) -> RunContext:
@@ -115,10 +116,12 @@ def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path =
 async def model_snapshot(cfg: Config, model: str) -> dict[str, Any]:
     """The Gateway's catalog entry for the model at run start (versions are not pinnable)."""
     m = cfg.models[model]
-    if m.provider != "vercel_ai_gateway":
-        return {"id": m.model, "provider": m.provider, "revision": m.revision, "dtype": m.dtype,
-                "max_length": m.max_length}
     import os
+
+    if m.provider == "cloudflare_workers_ai":
+        return await _workers_ai_snapshot(m)
+    if m.provider != "vercel_ai_gateway":
+        return {"id": m.model, "provider": m.provider}
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.get(f"{m.endpoint}/v1/models", headers={"Authorization": f"Bearer {os.environ[m.api_key_env]}"})
@@ -128,6 +131,30 @@ async def model_snapshot(cfg: Config, model: str) -> dict[str, Any]:
         raise FatalProviderError(f"model {m.model} not listed by the gateway")
     e = entries[0]
     return {k: e.get(k) for k in SNAPSHOT_FIELDS} | {"pricing": e.get("pricing")}
+
+
+async def _workers_ai_snapshot(m) -> dict[str, Any]:
+    """Workers AI catalog entry plus the open-weights repo revision, for the record.
+    Neither pins the served version (spec §0.3); a change between sessions is fatal."""
+    import os
+
+    account, token = os.environ[m.account_id_env], os.environ[m.api_key_env]
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.get(f"{m.endpoint}/accounts/{account}/ai/models/search",
+                             params={"search": m.model.rsplit("/", 1)[-1]},
+                             headers={"Authorization": f"Bearer {token}"})
+        r.raise_for_status()
+        entries = [e for e in (r.json().get("result") or []) if e.get("name") == m.model]
+        if not entries:
+            raise FatalProviderError(f"model {m.model} not listed by Workers AI")
+        e = entries[0]
+        hf = await client.get("https://huggingface.co/api/models/Cloudflare/" + m.model.rsplit("/", 1)[-1])
+    snap = {"id": m.model, "provider": m.provider,
+            "catalog": {k: e.get(k) for k in ("id", "name", "created_at", "task")},
+            "properties": e.get("properties")}
+    if hf.status_code == 200:
+        snap["hf_revision"] = hf.json().get("sha")
+    return snap
 
 
 def _manifest_path(rc: RunContext) -> Path:
@@ -167,6 +194,7 @@ def load_or_init_manifest(rc: RunContext) -> dict[str, Any]:
         "resolved_config": material_config(cfg, rc.model),
         "shared_inputs_sha256": shared_inputs_hash(cfg, rc.onto.sha256, rc.corpus_manifest["corpus_manifest_hash"],
                                                    rc.scope),
+        "dry_run": rc.dry_run,
         "skipped_by_routing": "omitted",
         "row_semantics": "article x model x node x child; per-call usage fields repeat per child row, aggregate by prediction_key",
         "models": {},
@@ -199,6 +227,8 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
         raise ValueError(f"model {model} is disabled in config")
     if adapter is None:
         check_credentials(cfg, [model])
+        if mcfg.provider == "cloudflare_workers_ai" and not mcfg.expected_model_returned:
+            raise RuntimeError(f"{model}: set expected_model_returned from `classify probe -m {model}` before running")
 
     man = load_or_init_manifest(rc)
     existing_work = any(results.work_dir(rc.run_dir, model).glob("part-*.parquet"))
@@ -323,13 +353,16 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
         await adapter.aclose()
         complete_after = results.complete_articles(rc.run_dir, model)
         finished = len(complete_after) == rc.corpus.height
+        session_s = round(time.monotonic() - t0, 1)
+        mman["elapsed_s_total"] = round(mman.get("elapsed_s_total", 0.0) + session_s, 1)
+        mman["sessions"] = mman.get("sessions", 0) + 1
         mman.update(
             {
                 "returned_versions": sorted(returned),
                 "routing_providers": sorted(providers),
                 "status": "COMPLETE" if finished and not fatal else "INCOMPLETE",
                 "complete_articles": len(complete_after),
-                "last_session": stats | {"elapsed_s": round(time.monotonic() - t0, 1), "ended_at": utc_now(),
+                "last_session": stats | {"elapsed_s": session_s, "ended_at": utc_now(),
                                          "fatal": repr(fatal) if fatal else None},
             }
         )

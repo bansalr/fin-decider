@@ -13,19 +13,25 @@ implementation (`src/classifier/`, `configs/classification.yaml`) makes.
 Anchor models: Jev (`typesafe-ai/jev`) and Laya
 (`convaiinnovations/laya`).
 
-Comparators in v1:
+Comparators in v1, all hosted decision models receiving the same
+rendered questions:
 
--   Liquid d1 (`liquid/d1`): a third hosted decision model on the same
-    gateway API, receiving byte-identical requests.
--   GLiClass (`knowledgator/gliclass-large-v3.0`, revision
-    `e065d1844f913a9aa611cf33623a9538b8aa8841`): an open-weight
-    zero-shot encoder run locally (see §0.9).
+-   Liquid d1 (`liquid/d1`), via Vercel AI Gateway.
+-   Clef (`@cf/cloudflare/clef`), Cloudflare's open-weight 27B decision
+    model, via Cloudflare Workers AI (§0.9).
 
-Deferred to v2: an NLI cross-encoder (DeBERTa-v3-large zeroshot v2.0),
-which GLiClass outperforms on published zero-shot benchmarks at about
-4x the throughput; hosted rerankers, whose per-label re-submission of
-the article makes full-corpus cost disproportionate; and embedding
-similarity, which has no a-priori decision threshold.
+Deferred to v2:
+
+-   GLiClass (`knowledgator/gliclass-large-v3.0`). Evaluated and
+    removed: with `{name}: {definition}` labels it was near chance on
+    the dev set (balanced accuracy 0.52; it scored "Neither / Out of
+    Scope" at about 0.99 for every article), and 0.73 with short
+    hand-written labels. It is also the only model needing local GPU
+    execution. The adapter is preserved in git history (`decff15`).
+-   An NLI cross-encoder (DeBERTa-v3-large zeroshot v2.0), hosted
+    rerankers, and embedding similarity, for the reasons previously
+    recorded: dominated by GLiClass, disproportionate full-corpus cost,
+    and no a-priori decision threshold respectively.
 
 ### 0.2 Provider: Vercel AI Gateway
 
@@ -161,32 +167,36 @@ different probabilities for identical requests across repeated runs;
 Jev results are therefore reproducible in distribution, not bit for
 bit.
 
-### 0.9 GLiClass representation
+### 0.9 Clef on Cloudflare Workers AI
 
-GLiClass is a uni-encoder (DeBERTa-v3-large) whose labels and article
-share one 512-token window, labels first. Ontology v1.1 adds a short
-plain-language `label` (at most about 8 words) to every node for this
-purpose. The label template is chosen on the same synthetic dev set by
-the highest balanced accuracy at 0.5 (`scripts/label_check.py`):
+Clef is invoked at
+`POST https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/cloudflare/clef`
+with `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`. Its request
+carries the same rendered questions as every other decision model; the
+only translation is the boolean type name, which Workers AI calls
+`noul`. Responses arrive in Cloudflare's `{result, success, errors}`
+envelope.
 
-| template | label text | balanced accuracy |
-|---|---|---|
-| `label_v1` | `{name}: {definition}` | 0.52 |
-| `label_name` | `{name}` | 0.67 |
-| `label_v2` | `{label}` | 0.73 |
+Workers AI reports no cost; cost is estimated from input tokens at the
+configured price ($0.24 per million) and marked as an estimate.
+Workers AI exposes no pinned version: identity is enforced by an
+`expected_model_returned` check (pinned from the first live probe; runs
+refuse to start without it), and the manifest records the Workers AI
+catalog entry and the current Hugging Face revision of `Cloudflare/clef`
+(§0.3 applies).
 
-`label_v1`, the format originally planned, was near chance: the model
-scored the "Neither / Out of Scope" child at about 0.99 for every
-article. `label_v2` is selected. GLiClass receives less ontology
-information than the decision models (no definitions, criteria or
-exclusions), never more (§18). The article is truncated from the end to
-fit after the labels; each call records `model_submitted_tokens` and
-`model_truncated`.
+### 0.11 End-of-run reports
 
-Scores are the model's independent sigmoid outputs for every label (no
-pipeline threshold); traversal applies the shared thresholds. The full
-corpus runs on a Colab T4 in `float16`; engineering runs on Apple MPS
-use `float32`. dtype is material, so these are separate run identities.
+At the user's request, every `classify run` ends by printing a report
+per model: cost, time and throughput (with a full-corpus projection for
+limited runs); label distribution; cross-model agreement against other
+runs with the same `shared_inputs_sha256` (descriptive, not accuracy);
+and balanced accuracy on the synthetic dev set. The §2 boundary is
+preserved: the report lives in a separate package (`src/report/`) that
+reads finished results, no classifier module other than the CLI
+orchestration imports it, and reports are written to `reports/`, never
+into `classification_results/`. There are no gold labels for the
+Bloomberg corpus; the dev-set figures describe the synthetic cases only.
 
 ### 0.10 Intermediate run and freeze rule
 

@@ -15,7 +15,7 @@ from .config import check_credentials, load_config
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 CONFIG = typer.Option(Path("configs/classification.yaml"), "--config", "-c")
-SET = typer.Option(None, "--set", help="Config override, e.g. models.gliclass.device=mps (repeatable)")
+SET = typer.Option(None, "--set", help="Config override, e.g. models.jev.concurrency=8 (repeatable)")
 
 
 def _setup(config: Path, overrides: Optional[list[str]] = None):
@@ -106,8 +106,11 @@ def run(
     progress_every: int = typer.Option(500, "--progress-every"),
     output_dir: Optional[Path] = typer.Option(None, "--output-dir", help="Results location (not part of run identity)"),
     overrides: Optional[list[str]] = SET,
+    show: int = typer.Option(0, "--show", help="Print the traversal tree for the first N articles"),
+    dev_eval: bool = typer.Option(True, "--dev-eval/--no-dev-eval", help="Score the synthetic dev set in the report"),
+    reports_dir: Path = typer.Option(Path("reports"), "--reports-dir"),
 ) -> None:
-    """Classify the canonical corpus (or the first N articles) with the selected models."""
+    """Classify the canonical corpus (or the first N articles) with the selected models, then report."""
     from .adapters.fake import FakeAdapter
     from .runner import prepare_run, run_model
 
@@ -116,15 +119,84 @@ def run(
         sets.append(f"output.directory={output_dir}")
     cfg = _setup(config, sets)
     models = model or [m for m, c in cfg.models.items() if c.enabled]
+    finished = []
     for m in models:
         rc = prepare_run(cfg, model=m, limit=limit)
         if dry_run:
             rc.run_dir = rc.run_dir.with_name(rc.run_dir.name + "_dryrun")
+            rc.run_id = rc.run_dir.name
+            rc.dry_run = True
         typer.echo(f"{m}: run_id {rc.run_id} -> {rc.run_dir}")
         adapter = FakeAdapter(m) if dry_run else None
-        stats = asyncio.run(run_model(rc, m, resume=resume, max_cost_usd=max_cost_usd, adapter=adapter,
-                                      progress_every=progress_every))
-        typer.echo(f"{m}: {stats}")
+        asyncio.run(run_model(rc, m, resume=resume, max_cost_usd=max_cost_usd, adapter=adapter,
+                              progress_every=progress_every))
+        finished.append(rc)
+    # Reports run after all models so cross-model agreement sees every run of this invocation.
+    for rc in finished:
+        _report(rc, show=show, dev_eval=dev_eval, reports_dir=reports_dir)
+
+
+def _report(rc, *, show: int, dev_eval: bool, reports_dir: Path) -> None:
+    """Downstream of classification: reads finished results, prints and saves the report."""
+    from report import devset, summary
+    from report.render import render, render_tree
+
+    from .adapters import make_adapter
+    from .adapters.base import ClassificationContext
+    from .adapters.fake import FakeAdapter
+
+    m, mcfg = rc.model, rc.cfg.models[rc.model]
+    if show:
+        rows = summary._read_rows(rc.run_dir, m)
+        h = rc.corpus.select("article_id", "headline")
+        typer.echo(f"\n── {m}: first {show} articles (✓ positive at {rc.cfg.hierarchy.classification.positive_threshold}, "
+                   f"→ traversed at {rc.cfg.hierarchy.traversal.threshold})")
+        for aid, headline in h.head(show).iter_rows():
+            typer.echo(render_tree(rows, aid, headline, rc.cfg.hierarchy.classification.positive_threshold,
+                                   rc.cfg.hierarchy.traversal.threshold))
+    dev = None
+    if dev_eval:
+        async def go():
+            adapter = FakeAdapter(m) if rc.dry_run else make_adapter(m, mcfg)
+            try:
+                ctx = ClassificationContext(mcfg.model, rc.templates[mcfg.template])
+                return await devset.evaluate(adapter, ctx, rc.onto)
+            finally:
+                await adapter.aclose()
+
+        dev = asyncio.run(go())
+    rep = summary.build(rc.run_dir, m, rc.onto, dev)
+    typer.echo("\n" + render(rep))
+    j, _ = summary.write(rep, reports_dir)
+    typer.echo(f"report saved: {j} (+ .md)")
+
+
+@app.command()
+def report(
+    config: Path = CONFIG,
+    model: str = typer.Option(..., "--model", "-m"),
+    limit: Optional[int] = typer.Option(None, "--limit"),
+    dry_run: bool = typer.Option(False, "--dry-run"),
+    show: int = typer.Option(0, "--show"),
+    dev_eval: bool = typer.Option(False, "--dev-eval/--no-dev-eval"),
+    reports_dir: Path = typer.Option(Path("reports"), "--reports-dir"),
+    output_dir: Optional[Path] = typer.Option(None, "--output-dir"),
+    overrides: Optional[list[str]] = SET,
+) -> None:
+    """Re-print the report for an existing run (same config, model and --limit as the run)."""
+    from .runner import prepare_run
+
+    sets = list(overrides or [])
+    if output_dir is not None:
+        sets.append(f"output.directory={output_dir}")
+    cfg = _setup(config, sets)
+    rc = prepare_run(cfg, model=model, limit=limit)
+    if dry_run:
+        rc.run_dir = rc.run_dir.with_name(rc.run_dir.name + "_dryrun")
+        rc.run_id, rc.dry_run = rc.run_dir.name, True
+    if not (rc.run_dir / "manifest.json").exists():
+        raise RuntimeError(f"no run at {rc.run_dir}")
+    _report(rc, show=show, dev_eval=dev_eval, reports_dir=reports_dir)
 
 
 @app.command()
@@ -145,6 +217,9 @@ def main() -> None:
     except FatalProviderError as e:
         typer.secho(f"FATAL: {e}", fg="red", err=True)
         raise SystemExit(2)
+    except (RuntimeError, ValueError) as e:
+        typer.secho(f"ERROR: {e}", fg="red", err=True)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

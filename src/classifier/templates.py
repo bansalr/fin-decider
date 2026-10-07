@@ -1,12 +1,11 @@
 """Versioned templates (spec §19).
 
 `boolean` templates render one decision question per child; one boolean template is
-shared by every decision model (Jev, Laya, d1), so they receive byte-identical
-questions. `label` templates render one label string per child for encoder
-classifiers such as GLiClass.
+shared by every decision model, so they receive byte-identical questions. `label`
+templates render one label string per child, for encoder classifiers.
 
 Placeholders: {parent_question} {name} {definition} {includes} {excludes}
-{synonyms} {yes_no_question} {criteria_true} {criteria_false} {label}. A line whose
+{synonyms} {yes_no_question} {criteria_true} {criteria_false}. A line whose
 placeholders all render empty is dropped. Ontology-backed placeholders that a
 template uses must be present on every node it renders (checked up front).
 """
@@ -24,7 +23,7 @@ _SECTION_RE = re.compile(r"^\[([a-z_.]+)\]\s*$", re.M)
 _FIELD_RE = re.compile(r"\{(\w+)\}")
 
 # Placeholders that must have a value on the node (not just be possibly-empty lists).
-REQUIRED_NODE_FIELDS = {"yes_no_question", "criteria_true", "criteria_false", "label"}
+REQUIRED_NODE_FIELDS = {"yes_no_question", "criteria_true", "criteria_false"}
 SECTIONS = {"boolean": ({"instructions"}, {"criteria.true", "criteria.false"}), "label": ({"label"}, set())}
 
 
@@ -42,7 +41,6 @@ def _values(parent: OntologyNode | None, child: OntologyNode) -> dict[str, str]:
         "excludes": "; ".join(child.excludes),
         "synonyms": "; ".join(child.synonyms),
         "yes_no_question": child.yes_no_question or "",
-        "label": child.label or "",
         "criteria_true": crit.get("true", ""),
         "criteria_false": crit.get("false", ""),
     }

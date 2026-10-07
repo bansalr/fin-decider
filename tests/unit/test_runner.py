@@ -116,15 +116,3 @@ async def test_run_and_resume(small_cfg):
     labels = results.leaf_labels(final)
     assert labels.height > 0
 
-
-def test_gliclass_identity_material_fields(small_cfg):
-    d, cfg = small_cfg
-
-    def h(c):
-        return prepare_run(c, model="gliclass", limit=None).run_hash
-
-    base = h(cfg)
-    assert h(variant(d, ["models", "gliclass", "device"], "mps")) == base
-    assert h(variant(d, ["models", "gliclass", "batch_size"], 4)) == base
-    assert h(variant(d, ["models", "gliclass", "dtype"], "float32")) != base
-    assert h(variant(d, ["models", "gliclass", "revision"], "a" * 40)) != base

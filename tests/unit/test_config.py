@@ -47,30 +47,12 @@ def test_threshold_range(repo_root):
         Config.model_validate(d)
 
 
-def test_local_model_needs_pinned_revision(repo_root):
-    d = raw(repo_root)
-    d["models"]["gliclass"]["revision"] = "main"
-    with pytest.raises(ValidationError, match="revision"):
-        Config.model_validate(d)
-    d = raw(repo_root)
-    del d["models"]["gliclass"]["dtype"]
-    with pytest.raises(ValidationError):
-        Config.model_validate(d)
-
-
-def test_gateway_model_rejects_local_fields(repo_root):
-    d = raw(repo_root)
-    d["models"]["jev"]["dtype"] = "float16"
-    with pytest.raises(ValidationError, match="not valid for gateway"):
-        Config.model_validate(d)
-
-
 def test_overrides(repo_root, tmp_path):
     from classifier.config import load_config
-    cfg = load_config(repo_root / "configs/classification.yaml", ["models.gliclass.device=mps", "models.gliclass.dtype=float32"])
-    assert cfg.models["gliclass"].device == "mps" and cfg.models["gliclass"].dtype == "float32"
+    cfg = load_config(repo_root / "configs/classification.yaml", ["models.jev.concurrency=4", "run.allow_dirty_git=true"])
+    assert cfg.models["jev"].concurrency == 4 and cfg.run.allow_dirty_git is True
     with pytest.raises(ValueError, match="unknown key"):
-        load_config(repo_root / "configs/classification.yaml", ["models.gliclass.devise=mps"])
+        load_config(repo_root / "configs/classification.yaml", ["models.jev.concurrensy=4"])
 
 
 def test_template_kind_enforced(repo_root):
