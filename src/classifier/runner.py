@@ -279,6 +279,10 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
         "code_commit": rc.git["commit"],
     }
 
+    # A model-specific technical limit tightens the shared cap; never loosens it.
+    input_cfg = cfg.input
+    if mcfg.max_input_chars and mcfg.max_input_chars < cfg.input.max_chars:
+        input_cfg = cfg.input.model_copy(update={"max_chars": mcfg.max_input_chars})
     stats = {"articles": 0, "complete": 0, "incomplete": 0, "calls": 0, "cost_usd": 0.0, "input_tokens": 0}
     returned, providers = set(mman["returned_versions"]), set(mman["routing_providers"])
     it = iter(todo)
@@ -291,7 +295,7 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
                 row = next(it)
             except StopIteration:
                 return
-            art = build_input(row["article_id"], row["headline"], row["article"], cfg.input)
+            art = build_input(row["article_id"], row["headline"], row["article"], input_cfg)
 
             def key_fn(node_id: str, _h=art.input_hash) -> str:
                 return sha256_obj([mcfg.model, _h, node_hashes[node_id], ontology_hash, mch, template.sha256])

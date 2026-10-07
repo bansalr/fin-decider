@@ -37,6 +37,11 @@ def question_keys(children: list[OntologyNode]) -> dict[str, str]:
     return {f"q{i + 1}": c.id for i, c in enumerate(children)}
 
 
+def body_questions(body: dict[str, Any]) -> dict[str, dict]:
+    """The rendered questions inside an encoded body (all providers keep them under `questions`)."""
+    return {k: dict(q, type="boolean") if q.get("type") == "noul" else q for k, q in body["questions"].items()}
+
+
 @dataclass
 class Decoded:
     model: str | None
@@ -92,6 +97,8 @@ class HttpDecisionAdapter(ClassificationAdapter):
     async def classify(self, article: ArticleInput, node: OntologyNode, children: list[OntologyNode],
                        ctx: ClassificationContext) -> NodeDecision:
         body, keys = self.build_request(article, node, children, ctx)
+        state = article.text
+        shrinks = 0
         attempt = 0
         while True:
             attempt += 1
@@ -105,7 +112,15 @@ class HttpDecisionAdapter(ClassificationAdapter):
             else:
                 latency_ms = (time.perf_counter() - t0) * 1000
                 if resp.status_code == 200:
-                    return self._parse(resp, node, keys, latency_ms, attempt)
+                    d = self._parse(resp, node, keys, latency_ms, attempt)
+                    d.state_chars = len(state)
+                    return d
+                if resp.status_code == 422 and self.cfg.shrink_on_422 and shrinks < 5 and len(state) > 200:
+                    # Input over the model's technical limit: resend with 20% less text from the end.
+                    shrinks += 1
+                    state = state[: int(len(state) * 0.8)]
+                    body = self.encode(state, body_questions(body))
+                    continue
                 failure, retry_after = self._http_failure(resp, attempt)
 
             if attempt > self.cfg.retries:

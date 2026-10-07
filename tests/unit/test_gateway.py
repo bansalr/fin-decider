@@ -144,3 +144,33 @@ async def test_fallback_header_is_fatal(cfg, template, monkeypatch):
     root, children = onto_root(cfg)
     with pytest.raises(FatalProviderError):
         await a.classify(ART, root, children, ClassificationContext("typesafe-ai/jev", template))
+
+
+async def test_shrink_on_422_resends_shorter_state(cfg, template, monkeypatch):
+    sent = []
+
+    def handler(request):
+        b = json.loads(request.content)
+        sent.append(len(b["state"]))
+        if len(b["state"]) > 60:
+            return httpx.Response(422, text="That request was rejected")
+        return httpx.Response(200, json=ok_body(b, cfg.models["laya"].model, "boundless"))
+
+    monkeypatch.setenv("VERCEL_API_KEY", "k")
+    mcfg = cfg.models["laya"].model_copy(update={"shrink_on_422": True})
+    a = GatewayAdapter("laya", mcfg, transport=httpx.MockTransport(handler))
+    text = "x" * 100
+    art = ArticleInput("a", text, "h", 100, 100, False, "head")
+    root, children = onto_root(cfg)
+    d = await a.classify(art, root, children, ClassificationContext(mcfg.model, template))
+    assert sent == [100, 80, 64, 51] and d.state_chars == 51
+
+
+async def test_422_without_shrink_is_invalid_request(cfg, template, monkeypatch):
+    monkeypatch.setenv("VERCEL_API_KEY", "k")
+    mcfg = cfg.models["jev"]
+    a = GatewayAdapter("jev", mcfg, transport=httpx.MockTransport(lambda r: httpx.Response(422, text="no")))
+    root, children = onto_root(cfg)
+    with pytest.raises(ProviderFailure) as e:
+        await a.classify(ART, root, children, ClassificationContext(mcfg.model, template))
+    assert e.value.status == "INVALID_REQUEST"

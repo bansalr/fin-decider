@@ -53,6 +53,7 @@ class NodeDecision:
     cost_usd: float | None = None
     attempts: int = 1
     generation_id: str | None = None
+    state_chars: int | None = None  # characters of article text actually sent in this call
     raw: dict[str, Any] | None = field(default=None, repr=False)
 
 

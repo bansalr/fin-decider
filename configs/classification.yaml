@@ -95,6 +95,10 @@ models:
     retries: 6
     concurrency: 32
     allow_returned_model_mismatch: false
+    # Laya via Boundless accepts ~512 tokens per question (article + question), despite
+    # the 8,192 the catalog lists (measured 2026-10-07: 1,870-2,080 chars max). Spec §7.
+    max_input_chars: 1500
+    shrink_on_422: true
 
   d1:
     enabled: true
