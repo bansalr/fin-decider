@@ -106,7 +106,7 @@ models:
 
   # Cloudflare's open-weight decision model on Workers AI. Same shared template;
   # the adapter only renames boolean -> noul. expected_model_returned is pinned
-  # from the first live probe; runs refuse to start until it is set.
+  # from the first live probe (runs refuse to start without it).
   clef:
     enabled: true
     adapter: clef
@@ -117,7 +117,7 @@ models:
     api_key_env: CLOUDFLARE_API_TOKEN
     account_id_env: CLOUDFLARE_ACCOUNT_ID
     price_per_m_input_tokens: 0.24
-    expected_model_returned: null
+    expected_model_returned: clef      # pinned from live probe 2026-10-07
     template: boolean_v1
     timeout_seconds: 60
     retries: 6

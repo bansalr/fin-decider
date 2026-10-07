@@ -85,11 +85,28 @@ async def test_same_questions_as_gateway_except_type_name(cfg, template, env):
     assert bodies["cf"]["state"] == bodies["gw"]["state"]
 
 
-async def test_probability_field_fallback(cfg, template, env):
-    a, _ = make(cfg, lambda r: httpx.Response(200, json=envelope(r, field="probability", p=0.4)))
+async def test_real_response_shape(cfg, template, env):
+    """Verbatim shape of a live Workers AI response (2026-10-07)."""
+    def handler(req):
+        q = json.loads(req.content)["questions"]
+        return httpx.Response(200, json={
+            "result": {"model": "clef", "answers": {k: {"type": "noul", "noul": 0.9808} for k in q},
+                       "usage": {"input_tokens": 250, "output_tokens": 0}},
+            "success": True, "errors": [], "messages": []})
+
+    a, _ = make(cfg, handler)
     node, kids = root(cfg)
     d = await a.classify(ART, node, kids, ClassificationContext("x", template))
-    assert set(d.scores.values()) == {0.4}
+    assert set(d.scores.values()) == {0.9808} and d.model_returned == "clef"
+    assert d.input_tokens == 250 and d.output_tokens == 0
+
+
+async def test_unknown_probability_field_is_model_error(cfg, template, env):
+    a, _ = make(cfg, lambda r: httpx.Response(200, json=envelope(r, field="probability", p=0.4)))
+    node, kids = root(cfg)
+    with pytest.raises(ProviderFailure) as e:
+        await a.classify(ART, node, kids, ClassificationContext("x", template))
+    assert e.value.status == "MODEL_ERROR"
 
 
 async def test_success_false_is_provider_error(cfg, template, env):
@@ -115,7 +132,7 @@ async def test_retry_on_429(cfg, template, env):
 
 
 async def test_expected_model_mismatch_is_fatal(cfg, template, env):
-    a, _ = make(cfg, lambda r: httpx.Response(200, json=envelope(r, model="clef-flash")), expected_model_returned="clef")
+    a, _ = make(cfg, lambda r: httpx.Response(200, json=envelope(r, model="clef-flash")))
     node, kids = root(cfg)
     with pytest.raises(FatalProviderError):
         await a.classify(ART, node, kids, ClassificationContext("x", template))

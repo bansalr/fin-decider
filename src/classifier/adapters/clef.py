@@ -18,17 +18,9 @@ import httpx
 from .base import FatalProviderError, ProviderFailure
 from .http_decision import Decoded, HttpDecisionAdapter
 
-# Field names are tolerated in this order until the live probe pins them.
-_PROB_FIELDS = ("noul", "probability")
-_IN_TOKEN_FIELDS = ("input_tokens", "inputTokens", "prompt_tokens")
-_OUT_TOKEN_FIELDS = ("output_tokens", "outputTokens", "completion_tokens")
-
-
-def _first(d: dict, keys: tuple[str, ...]):
-    for k in keys:
-        if k in d:
-            return d[k]
-    return None
+# Field names as returned by Workers AI (verified by live probe, 2026-10-07):
+# {"result": {"model": "clef", "answers": {"q1": {"type": "noul", "noul": 0.98}},
+#             "usage": {"input_tokens": 250, "output_tokens": 0}}, "success": true, ...}
 
 
 class ClefAdapter(HttpDecisionAdapter):
@@ -61,13 +53,13 @@ class ClefAdapter(HttpDecisionAdapter):
         if not isinstance(answers, dict):
             raise ProviderFailure("MODEL_ERROR", "answers_not_object", str(answers)[:200], attempt)
         usage = result.get("usage") or {}
-        tin = _first(usage, _IN_TOKEN_FIELDS)
+        tin = usage.get("input_tokens")
         price = self.cfg.price_per_m_input_tokens
         return Decoded(
             model=result.get("model"),
-            probabilities={k: _first(v or {}, _PROB_FIELDS) for k, v in answers.items()},
+            probabilities={k: (v or {}).get("noul") for k, v in answers.items()},
             input_tokens=tin,
-            output_tokens=_first(usage, _OUT_TOKEN_FIELDS),
+            output_tokens=usage.get("output_tokens"),
             cost_usd=(tin * price / 1e6) if (tin is not None and price is not None) else None,
             generation_id=resp.headers.get("cf-ray"),
             provider="cloudflare-workers-ai",
