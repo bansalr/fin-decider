@@ -57,7 +57,7 @@ templates:
     path: templates/decision/boolean_v1.txt
     sha256: "df6bccc8cc3e851477f097455db5e4db4dc69a16273281ffc00129865e4717f6"
 
-# Both anchors are reached through Vercel AI Gateway with byte-identical requests;
+# All decision models (Jev, Laya, d1) are reached through Vercel AI Gateway with byte-identical requests;
 # only `model` and `provider_lock` differ. The gateway exposes no dated versions,
 # so identity is enforced via provider lock + returned-model check + catalog snapshot.
 models:
@@ -82,6 +82,20 @@ models:
     endpoint: https://ai-gateway.vercel.sh
     model: convaiinnovations/laya
     provider_lock: [boundless]
+    api_key_env: VERCEL_API_KEY
+    template: boolean_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  d1:
+    enabled: true
+    adapter: d1
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: liquid/d1
+    provider_lock: [liquid]
     api_key_env: VERCEL_API_KEY
     template: boolean_v1
     timeout_seconds: 60

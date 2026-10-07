@@ -51,6 +51,8 @@ def test_run_identity(small_cfg):
     assert prepare_run(cfg, limit=None).run_hash == base
     assert prepare_run(variant(d, ["models", "jev", "concurrency"], 4), limit=None).run_hash == base
     assert prepare_run(variant(d, ["models", "jev", "retries"], 1), limit=None).run_hash == base
+    assert prepare_run(variant(d, ["output", "directory"], "/elsewhere"), limit=None).run_hash == base
+    assert prepare_run(variant(d, ["models", "d1", "enabled"], False), limit=None).run_hash != base
     changed = [
         variant(d, ["hierarchy", "traversal", "threshold"], 0.25),
         variant(d, ["hierarchy", "classification", "positive_threshold"], 0.6),

@@ -63,7 +63,7 @@ async def test_request_shape_and_parse(cfg, template, monkeypatch):
 async def test_jev_and_laya_requests_identical_except_model(cfg, template, monkeypatch):
     bodies = {}
     root, children = onto_root(cfg)
-    for m, prov in (("jev", "typesafe-ai"), ("laya", "boundless")):
+    for m, prov in (("jev", "typesafe-ai"), ("laya", "boundless"), ("d1", "liquid")):
         def handler(request, m=m, prov=prov):
             bodies[m] = json.loads(request.content)
             return httpx.Response(200, json=ok_body(bodies[m], cfg.models[m].model, prov))
@@ -71,7 +71,7 @@ async def test_jev_and_laya_requests_identical_except_model(cfg, template, monke
         await a.classify(ART, root, children, ClassificationContext(cfg.models[m].model, template))
         await a.aclose()
     strip = lambda b: {k: v for k, v in b.items() if k not in ("model", "providerOptions")}  # noqa: E731
-    assert strip(bodies["jev"]) == strip(bodies["laya"])
+    assert strip(bodies["jev"]) == strip(bodies["laya"]) == strip(bodies["d1"])
 
 
 async def test_retry_on_429_then_success(cfg, template, monkeypatch):

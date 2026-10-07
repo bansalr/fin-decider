@@ -27,12 +27,14 @@ from .traversal import classify_article
 # Operational knobs that do not change any classification; excluded from identity hashes.
 NON_MATERIAL_MODEL_FIELDS = {"concurrency", "retries", "timeout_seconds"}
 NON_MATERIAL_RUN_FIELDS = {"allow_dirty_git", "label"}
+NON_MATERIAL_OUTPUT_FIELDS = {"directory", "shard_rows"}
 SNAPSHOT_FIELDS = ("id", "type", "context_window", "released", "owned_by")
 
 
 def material_config(cfg: Config) -> dict[str, Any]:
     d = cfg.model_dump()
     d["run"] = {k: v for k, v in d["run"].items() if k not in NON_MATERIAL_RUN_FIELDS}
+    d["output"] = {k: v for k, v in d["output"].items() if k not in NON_MATERIAL_OUTPUT_FIELDS}
     d["models"] = {
         name: {k: v for k, v in m.items() if k not in NON_MATERIAL_MODEL_FIELDS}
         for name, m in d["models"].items()

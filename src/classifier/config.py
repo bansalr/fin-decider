@@ -119,7 +119,7 @@ class Template(Strict):
 
 class ModelCfg(Strict):
     enabled: bool
-    adapter: Literal["jev", "laya", "fake"]
+    adapter: Literal["jev", "laya", "d1", "fake"]
     provider: Literal["vercel_ai_gateway", "local"]
     endpoint: str | None
     model: str
