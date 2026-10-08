@@ -41,6 +41,7 @@ class GatewayAdapter(HttpDecisionAdapter):
         return Decoded(
             model=data.get("model"),
             probabilities={k: (v or {}).get("probability") for k, v in answers.items()},
+            answers=answers,
             input_tokens=usage.get("inputTokens"),
             output_tokens=usage.get("outputTokens"),
             cost_usd=float(cost) if cost is not None else None,

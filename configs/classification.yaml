@@ -59,6 +59,12 @@ templates:
     kind: boolean
     path: templates/decision/boolean_v2c.txt
     sha256: "c2fa018b7cdb7813f8f67b1d1c4ea158dfc857b1709c8fbba77df982908d2b4f"
+  # Comparison arm (spec §0.13): one multi-option question per node instead of one
+  # yes/no question per child. Options compete, so scores are shares of one unit.
+  choice_v1:
+    kind: choice
+    path: templates/decision/choice_v1.txt
+    sha256: "451960f8b451c701c9103df1f88439b22919b0eb0974900f989a2e4c603308f7"
   boolean_v1:
     kind: boolean
     path: templates/decision/boolean_v1.txt
@@ -129,6 +135,52 @@ models:
     price_per_m_input_tokens: 0.24
     expected_model_returned: clef      # pinned from live probe 2026-10-07
     template: boolean_v2c
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  # ── Choice-mode comparison arms: same models, choice_v1 template ──────────────
+  jev_choice:
+    enabled: true
+    adapter: jev
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: typesafe-ai/jev
+    provider_lock: [typesafe-ai]
+    api_key_env: VERCEL_API_KEY
+    template: choice_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  d1_choice:
+    enabled: true
+    adapter: d1
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: liquid/d1
+    provider_lock: [liquid]
+    api_key_env: VERCEL_API_KEY
+    template: choice_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  clef_choice:
+    enabled: true
+    adapter: clef
+    provider: cloudflare_workers_ai
+    endpoint: https://api.cloudflare.com/client/v4
+    model: "@cf/cloudflare/clef"
+    provider_lock: []
+    api_key_env: CLOUDFLARE_API_TOKEN
+    account_id_env: CLOUDFLARE_ACCOUNT_ID
+    price_per_m_input_tokens: 0.24
+    expected_model_returned: clef      # pinned from live probe 2026-10-07
+    template: choice_v1
     timeout_seconds: 60
     retries: 6
     concurrency: 32

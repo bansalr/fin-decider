@@ -29,6 +29,8 @@ from classifier.templates import load_template
 from report import devset
 
 ROOT = Path(__file__).resolve().parents[1]
+# Dev cases with two or more positive children under the same parent (multi-label nodes).
+MULTI = {"rel-01", "lend-02"}
 
 
 async def main() -> None:
@@ -39,6 +41,8 @@ async def main() -> None:
     ap.add_argument("--templates", nargs="+", default=["boolean_v1", "boolean_v2a", "boolean_v2b", "boolean_v2c"])
     ap.add_argument("--models", nargs="+", default=["jev", "laya", "d1", "clef"])
     ap.add_argument("--out", default=None, help="optional JSON dump of all scores")
+    ap.add_argument("--thresholds", nargs="+", type=float, default=[0.5],
+                    help="also report balanced accuracy at these cutoffs (choice scores are shares, not independent)")
     args = ap.parse_args()
 
     load_dotenv(ROOT / ".env")
@@ -56,7 +60,7 @@ async def main() -> None:
     results: dict[str, dict[str, dict]] = {}
     for tname in args.templates:
         path = ROOT / f"templates/decision/{tname}.txt"
-        tmpl = load_template(path, sha256_file(path), "boolean")
+        tmpl = load_template(path, sha256_file(path), "choice" if tname.startswith("choice") else "boolean")
         tmpl.check_ontology(onto)
         results[tname] = {}
         for m in models:
@@ -85,6 +89,20 @@ async def main() -> None:
         print(f"\n{m}: worst misses with {best}")
         for x in results[best][m]["worst_misses"]:
             print(f"   {x['case']:7s} {x['node']:40s} y={x['y']} p={x['p']:.2f}")
+    for t in args.thresholds:
+        if t == 0.5:
+            continue
+        print(f"\nbalanced accuracy at cutoff {t}:")
+        for tname, per in results.items():
+            accs = [devset.rates([(x["y"], x["p"]) for x in per[m]["detail"]], t)["balanced_accuracy"] for m in models]
+            print(f"{tname:14s} " + " ".join(f"{a:8.3f}" for a in accs) + f"   min {min(accs):.3f}")
+    print("\nrecall on multi-label cases (2+ true children under one node) at 0.5:")
+    for tname, per in results.items():
+        accs = []
+        for m in models:
+            pos = [x for x in per[m]["detail"] if x["case"] in MULTI and x["y"] == 1]
+            accs.append(sum(x["p"] >= 0.5 for x in pos) / len(pos) if pos else float("nan"))
+        print(f"{tname:14s} " + " ".join(f"{a:8.2f}" for a in accs))
     if args.out:
         Path(args.out).write_text(json.dumps(results, indent=1, default=str))
 

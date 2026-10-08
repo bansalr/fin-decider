@@ -24,7 +24,14 @@ _FIELD_RE = re.compile(r"\{(\w+)\}")
 
 # Placeholders that must have a value on the node (not just be possibly-empty lists).
 REQUIRED_NODE_FIELDS = {"yes_no_question", "criteria_true", "criteria_false"}
-SECTIONS = {"boolean": ({"instructions"}, {"criteria.true", "criteria.false"}), "label": ({"label"}, set())}
+SECTIONS = {
+    "boolean": ({"instructions"}, {"criteria.true", "criteria.false"}),
+    "label": ({"label"}, set()),
+    # One multi-option question per node: options are the children (key = child name,
+    # description from [option]); [none] adds a "None of these" option below the root.
+    "choice": ({"instructions", "option"}, {"none"}),
+}
+NONE_OPTION = "None of these"
 
 
 class TemplateError(ValueError):
@@ -90,6 +97,26 @@ class Template:
         if t or f:
             q["criteria"] = {"true": t, "false": f}
         return q
+
+    def render_choice(self, parent: OntologyNode, children: list[OntologyNode]) -> tuple[dict, dict[str, str]]:
+        """One choice question over a node's children -> (question, {option key: child id}).
+
+        Option keys are the children's names. Probabilities compete (sum to 1), so a
+        child's score is its share of the mass; "None of these" absorbs the rest."""
+        if self.kind != "choice":
+            raise TemplateError("render_choice() is for choice templates")
+        criteria, keys = {}, {}
+        for c in children:
+            criteria[c.name] = _fill(self.sections["option"], _values(parent, c))
+            keys[c.name] = c.id
+        if len(keys) != len(children):
+            raise TemplateError(f"{parent.id}: children names are not unique")
+        none_text = _fill(self.sections.get("none", ""), _values(parent, parent))
+        if none_text and parent.parent is not None:
+            criteria[NONE_OPTION] = none_text
+        q = {"type": "choice", "instructions": _fill(self.sections["instructions"], _values(parent, parent)),
+             "criteria": criteria}
+        return q, keys
 
     def render_label(self, child: OntologyNode) -> str:
         if self.kind != "label":

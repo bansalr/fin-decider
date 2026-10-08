@@ -35,6 +35,7 @@ class SystemOneAdapter(HttpDecisionAdapter):
         return Decoded(
             model=data.get("model"),
             probabilities={k: (v or {}).get("noul") for k, v in answers.items()},
+            answers=answers,
             input_tokens=usage.get("input_tokens"),
             output_tokens=usage.get("output_tokens"),
             cost_usd=0.0,  # self-hosted: no provider bill; compute time is in the report

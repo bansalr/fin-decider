@@ -1,0 +1,6 @@
+[instructions]
+{parent_question}
+[option]
+{yes_no_question}
+[none]
+The article describes none of the other options.

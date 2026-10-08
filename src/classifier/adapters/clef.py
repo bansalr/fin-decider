@@ -58,6 +58,7 @@ class ClefAdapter(HttpDecisionAdapter):
         return Decoded(
             model=result.get("model"),
             probabilities={k: (v or {}).get("noul") for k, v in answers.items()},
+            answers=answers,
             input_tokens=tin,
             output_tokens=usage.get("output_tokens"),
             cost_usd=(tin * price / 1e6) if (tin is not None and price is not None) else None,

@@ -37,6 +37,10 @@ def question_keys(children: list[OntologyNode]) -> dict[str, str]:
     return {f"q{i + 1}": c.id for i, c in enumerate(children)}
 
 
+CHOICE = "__choice__"  # marker in `keys` for choice mode
+CHOICE_KEY = "q1"
+
+
 def body_questions(body: dict[str, Any]) -> dict[str, dict]:
     """The rendered questions inside an encoded body (all providers keep them under `questions`)."""
     return {k: dict(q, type="boolean") if q.get("type") == "noul" else q for k, q in body["questions"].items()}
@@ -45,12 +49,13 @@ def body_questions(body: dict[str, Any]) -> dict[str, dict]:
 @dataclass
 class Decoded:
     model: str | None
-    probabilities: dict[str, Any]  # question key -> raw probability value
+    probabilities: dict[str, Any]  # question key -> raw boolean probability value
     input_tokens: int | None
     output_tokens: int | None
     cost_usd: float | None
     generation_id: str | None
     provider: str | None
+    answers: dict[str, Any] | None = None  # raw answers, for choice questions
 
 
 class HttpDecisionAdapter(ClassificationAdapter):
@@ -92,6 +97,11 @@ class HttpDecisionAdapter(ClassificationAdapter):
 
     def build_request(self, article: ArticleInput, node: OntologyNode, children: list[OntologyNode],
                       ctx: ClassificationContext) -> tuple[dict[str, Any], dict[str, str]]:
+        """-> (body, keys). Boolean mode: keys map question keys q1..qn to children.
+        Choice mode: one question "q1"; keys map option names to children, under CHOICE."""
+        if ctx.template.kind == "choice":
+            q, opt_keys = ctx.template.render_choice(node, children)
+            return self.encode(article.text, {CHOICE_KEY: q}), {CHOICE: opt_keys}
         keys = question_keys(children)
         by_id = {c.id: c for c in children}
         questions = {k: ctx.template.render(node, by_id[cid]) for k, cid in keys.items()}
@@ -157,7 +167,15 @@ class HttpDecisionAdapter(ClassificationAdapter):
         dec = self.decode(resp, data, attempt)
         if not self.cfg.allow_returned_model_mismatch:
             self.check_identity(dec)
-        if set(dec.probabilities) != set(keys):
+        if CHOICE in keys:
+            ans = (dec.answers or {}).get(CHOICE_KEY) or {}
+            probs = ans.get("probabilities")
+            opts = keys[CHOICE]
+            if not isinstance(probs, dict) or not set(opts) <= set(probs):
+                raise ProviderFailure("MODEL_ERROR", "choice_probabilities", f"{str(ans)[:200]}", attempt)
+            dec.probabilities = dict(probs)
+            keys = opts
+        elif set(dec.probabilities) != set(keys):
             raise ProviderFailure("MODEL_ERROR", "answer_keys",
                                   f"expected {sorted(keys)}, got {sorted(dec.probabilities)}", attempt)
         scores: dict[str, float] = {}

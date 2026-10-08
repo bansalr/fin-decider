@@ -174,3 +174,59 @@ async def test_422_without_shrink_is_invalid_request(cfg, template, monkeypatch)
     with pytest.raises(ProviderFailure) as e:
         await a.classify(ART, root, children, ClassificationContext(mcfg.model, template))
     assert e.value.status == "INVALID_REQUEST"
+
+
+async def test_choice_mode_request_and_scores(cfg, monkeypatch):
+    from classifier.ontology import load_ontology
+    from classifier.provenance import sha256_file
+    from classifier.templates import NONE_OPTION, load_template
+
+    monkeypatch.setenv("VERCEL_API_KEY", "k")
+    p = "templates/decision/choice_v1.txt"
+    tmpl = load_template(p, sha256_file(p), "choice")
+    onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
+    seen = {}
+
+    def handler(req):
+        b = json.loads(req.content)
+        seen["body"] = b
+        opts = list(b["questions"]["q1"]["criteria"])
+        probs = {o: 0.0 for o in opts}
+        probs[opts[0]] = 0.7
+        probs[opts[-1]] = 0.3
+        return httpx.Response(200, json={"model": "typesafe-ai/jev",
+                                         "answers": {"q1": {"type": "choice", "choice": opts[0], "probabilities": probs}},
+                                         "providerMetadata": {"gateway": {"routing": {"finalProvider": "typesafe-ai"}}}})
+
+    a = GatewayAdapter("jev", cfg.models["jev"], transport=httpx.MockTransport(handler))
+    node = onto.node("business.markets")
+    kids = onto.children(node.id)
+    d = await a.classify(ART, node, kids, ClassificationContext("typesafe-ai/jev", tmpl))
+    q = seen["body"]["questions"]
+    assert list(q) == ["q1"] and q["q1"]["type"] == "choice"
+    assert list(q["q1"]["criteria"]) == [k.name for k in kids] + [NONE_OPTION]
+    assert set(d.scores) == {k.id for k in kids}  # "None of these" is not a child
+    assert d.scores[kids[0].id] == 0.7 and sum(d.scores.values()) == pytest.approx(0.7)
+
+    root = onto.node("relevance")
+    seen.clear()
+    await a.classify(ART, root, onto.children("relevance"), ClassificationContext("typesafe-ai/jev", tmpl))
+    assert NONE_OPTION not in seen["body"]["questions"]["q1"]["criteria"]  # root already has "Neither"
+
+
+async def test_choice_missing_option_is_model_error(cfg, monkeypatch):
+    from classifier.ontology import load_ontology
+    from classifier.provenance import sha256_file
+    from classifier.templates import load_template
+
+    monkeypatch.setenv("VERCEL_API_KEY", "k")
+    p = "templates/decision/choice_v1.txt"
+    tmpl = load_template(p, sha256_file(p), "choice")
+    onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
+    body = {"model": "typesafe-ai/jev", "answers": {"q1": {"type": "choice", "probabilities": {"x": 1.0}}},
+            "providerMetadata": {"gateway": {"routing": {"finalProvider": "typesafe-ai"}}}}
+    a = GatewayAdapter("jev", cfg.models["jev"], transport=httpx.MockTransport(lambda r: httpx.Response(200, json=body)))
+    with pytest.raises(ProviderFailure) as e:
+        await a.classify(ART, onto.node("relevance"), onto.children("relevance"), ClassificationContext("x", tmpl))
+    assert e.value.status == "MODEL_ERROR"
+
