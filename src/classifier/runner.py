@@ -170,13 +170,17 @@ async def _workers_ai_snapshot(m) -> dict[str, Any]:
         if not entries:
             raise FatalProviderError(f"model {m.model} not listed by Workers AI")
         e = entries[0]
-        hf = await client.get("https://huggingface.co/api/models/Cloudflare/" + m.model.rsplit("/", 1)[-1])
+        # The open-weights revision is recorded for reference only (it does not pin what
+        # Workers AI serves), so a Hugging Face outage must not block the run.
+        try:
+            hf = await client.get("https://huggingface.co/api/models/Cloudflare/" + m.model.rsplit("/", 1)[-1])
+            hf_revision = hf.json().get("sha") if hf.status_code == 200 else f"unavailable (HTTP {hf.status_code})"
+        except httpx.HTTPError as err:
+            hf_revision = f"unavailable ({type(err).__name__})"
     snap = {"id": m.model, "provider": m.provider,
             "catalog": {k: e.get(k) for k in ("id", "name", "created_at", "task")},
             "properties": e.get("properties")}
-    if hf.status_code == 200:
-        snap["hf_revision"] = hf.json().get("sha")
-    return snap
+    return snap | {"hf_revision": hf_revision}
 
 
 def _manifest_path(rc: RunContext) -> Path:
