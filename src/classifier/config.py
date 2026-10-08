@@ -132,7 +132,7 @@ class ModelCfg(Strict):
     concurrency: int = Field(ge=1, le=512)
     allow_returned_model_mismatch: bool
     # Model-specific technical input limit (spec §7): cap the article before sending,
-    # and on HTTP 422 retry with 20% less text (up to 5 times). Both are material.
+    # and on HTTP 413/422 retry with 20% less text (up to 5 times). Both are material.
     max_input_chars: int | None = Field(default=None, gt=0)
     shrink_on_422: bool = False
     # Cloudflare Workers AI only

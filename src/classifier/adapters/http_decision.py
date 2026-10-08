@@ -118,7 +118,8 @@ class HttpDecisionAdapter(ClassificationAdapter):
                     d = self._parse(resp, node, keys, latency_ms, attempt)
                     d.state_chars = len(state)
                     return d
-                if resp.status_code == 422 and self.cfg.shrink_on_422 and shrinks < 5 and len(state) > 200:
+                # 422 (Laya, Strands) or 413 (Matilda Jev) when the input exceeds the model's window.
+                if resp.status_code in (413, 422) and self.cfg.shrink_on_422 and shrinks < 5 and len(state) > 200:
                     # Input over the model's technical limit: resend with 20% less text from the end.
                     shrinks += 1
                     state = state[: int(len(state) * 0.8)]

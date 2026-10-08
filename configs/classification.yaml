@@ -134,6 +134,71 @@ models:
     concurrency: 32
     allow_returned_model_mismatch: false
 
+  # ── Self-hosted open-weight decision models (provider local_server) ──────────
+  # Served on a GPU next to the pipeline (Colab / rented GPU); disabled until a
+  # server is running. Enable per run: --set models.<name>.enabled=true
+  strands:
+    enabled: false
+    adapter: systemone
+    provider: local_server
+    endpoint: http://127.0.0.1:8000     # strands-decider serve <ckpt> --model-name strands-decider-2B-hobson-v19
+    model: StrandsAgents/strands-decider-2B-hobson-v19
+    revisions:
+      StrandsAgents/strands-decider-2B-hobson-v19: bb282d786bc251fd4e3068de3ada9ddbb38127cd
+    quantization: none
+    expected_model_returned: strands-decider-2B-hobson-v19
+    provider_lock: []
+    api_key_env: null
+    template: boolean_v2c
+    max_input_chars: 8000               # 3,072-token window shared with the questions
+    shrink_on_422: true
+    timeout_seconds: 120
+    retries: 3
+    concurrency: 4
+    allow_returned_model_mismatch: false
+
+  clm:
+    enabled: false
+    adapter: systemone
+    provider: local_server
+    endpoint: http://127.0.0.1:8700     # clm-serve over vllm serve Qwen/Qwen3-8B --runner pooling
+    model: Contrastive-LM/CLM-v0.1-8B
+    revisions:
+      Contrastive-LM/CLM-v0.1-8B: e939398d4556fcd9400c76fa8c5a513202f42b0a
+      Qwen/Qwen3-8B: b968826d9c46dd6066d109eabc6255188de91218
+    quantization: bnb8                  # 8-bit encoder to fit a 16 GB T4 (spec deviation)
+    expected_model_returned: clm-latest
+    request_model: clm-latest
+    provider_lock: []
+    api_key_env: null
+    template: boolean_v2c
+    max_input_chars: 6000               # encoder truncates at 2,048 tokens; keep truncation explicit
+    shrink_on_422: true
+    timeout_seconds: 120
+    retries: 3
+    concurrency: 8
+    allow_returned_model_mismatch: false
+
+  matilda:
+    enabled: false
+    adapter: systemone
+    provider: local_server
+    endpoint: http://127.0.0.1:8083     # python -m maincode_jev_serve.server --model-name matilda-jev-v1
+    model: Maincode/matilda-jev-v1
+    revisions:
+      Maincode/matilda-jev-v1: 3dd1a9db4c337f6aca80d4b682a1fcf712944d7e
+    quantization: none                  # bf16, ~49 GB VRAM: needs an 80 GB-class GPU
+    expected_model_returned: matilda-jev-v1
+    request_model: matilda-jev-v1
+    provider_lock: []
+    api_key_env: null
+    template: boolean_v2c
+    shrink_on_422: true                 # server answers 413 when input exceeds its context
+    timeout_seconds: 120
+    retries: 3
+    concurrency: 4
+    allow_returned_model_mismatch: false
+
 output:
   directory: classification_results
   format: parquet
