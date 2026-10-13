@@ -19,8 +19,13 @@ from classifier.provenance import sha256_text
 DEV = Path(__file__).resolve().parents[2] / "dev"
 # Dev cases are labelled with node IDs, so each ontology version has its own file.
 # v2 is v1 remapped through v1.1's merged_from (a merged node is positive if any source was).
-CASES_BY_ONTOLOGY = {"1.0.0": DEV / "template_cases_v1.jsonl", "1.1.0": DEV / "template_cases_v2.jsonl"}
-DEFAULT_CASES = CASES_BY_ONTOLOGY["1.1.0"]
+# v3 = v2 plus 5 cases for the error patterns seen in the diagnostic runs (spec §0.10).
+CASES_BY_ONTOLOGY = {
+    "1.0.0": DEV / "template_cases_v1.jsonl",
+    "1.1.0": DEV / "template_cases_v2.jsonl",
+    "1.1.1": DEV / "template_cases_v3.jsonl",
+}
+DEFAULT_CASES = CASES_BY_ONTOLOGY["1.1.1"]
 
 
 def load_cases(path: str | Path = DEFAULT_CASES) -> list[dict]:

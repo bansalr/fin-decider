@@ -57,11 +57,13 @@ def test_v1_1_maps_every_v1_0_node(repo_root):
 def test_dev_cases_match_ontology_versions(repo_root):
     from report.devset import CASES_BY_ONTOLOGY, load_cases
 
+    files = {"1.0": repo_root / "gsib_basel_ontology_v1.0.json", "1.1": repo_root / "gsib_basel_ontology_v1.1.json"}
     for version, path in CASES_BY_ONTOLOGY.items():
-        onto = load_ontology(repo_root / f"gsib_basel_ontology_v{version.rsplit('.', 1)[0]}.json")
-        assert onto.version == version
+        # 1.1.x patch versions share v1.1's node IDs; only wording changes between them.
+        onto = load_ontology(files[version.rsplit(".", 1)[0]])
         for c in load_cases(path):
             assert set(c["expect"]) <= set(onto.nodes), (version, c["id"])
+    assert load_ontology(files["1.1"]).version in CASES_BY_ONTOLOGY
 
 
 def test_unknown_placeholder_rejected(tmp_path):

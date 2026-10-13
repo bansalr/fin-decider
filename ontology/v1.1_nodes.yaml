@@ -1,8 +1,9 @@
 ontology:
   id: gsib_basel_markets_lending
-  version: 1.1.0
+  version: 1.1.1
   title: Basel-derived G-SIB Markets and Lending Activity Ontology
-  description: 'v1.1: consolidated (rare and overlapping nodes merged) with per-node yes/no questions and criteria.'
+  description: 'v1.1.1: consolidated (rare and overlapping nodes merged) with per-node yes/no questions and criteria;
+    1.1.1 clarifies that central banks, bank research/commentary and plain price moves are not G-SIB activity.'
   roots:
   - relevance
   changes_from: 1.0.0
@@ -40,15 +41,21 @@ nodes:
     - issuer news without banking activity
     - central-bank policy decision without dealer activity
     - bank share-price move only
+    - central-bank policy or operations, even when described as 'the bank'
+    - bank analysts' or economists' forecasts and commentary
+    - price moves of bonds, currencies, commodities, or stocks
     synonyms:
     - banking activity
     - dealer activity
-    yes_no_question: Does the article describe a bank, dealer, or lender doing business, such as lending, underwriting,
-      trading, market making, financing clients, or managing its own funding?
+    yes_no_question: Does the article describe a commercial or investment bank, dealer, or lender doing business,
+      such as lending, underwriting, trading, market making, financing clients, or managing its own funding? Central-bank
+      actions, bank analysts' forecasts or commentary, and price moves of bonds, currencies, commodities, or stocks
+      do not count.
     criteria:
       'true': A bank or dealer's lending, deal, trade, client financing, or funding activity is reported, or a bank
         business line's results or strategy are discussed.
-      'false': Only prices, economic data, policy, or non-bank company news, with no bank or dealer activity described.
+      'false': Only prices, economic data, central-bank or government policy, bank analysts' forecasts or commentary,
+        or non-bank company news, with no bank or dealer business activity described.
     merged_from:
     - relevance.gsib_activity
     _term_hits_with_bank: null
@@ -70,11 +77,12 @@ nodes:
     - derivatives transaction
     - securities financing
     synonyms: []
-    yes_no_question: Is the article about financial markets, the economy, policy, or companies, without describing
-      any bank or dealer lending, underwriting, trading for clients, or financing?
+    yes_no_question: Is the article about financial markets, the economy, policy, or companies, including central-bank
+      actions and bank analysts' forecasts or commentary, without describing a commercial or investment bank or
+      dealer lending, underwriting, trading for clients, or financing?
     criteria:
-      'true': Market moves, prices, economic data, central-bank or government policy, or company news, with no bank
-        or dealer business activity described.
+      'true': Market moves, prices, economic data, central-bank or government policy, bank analysts' forecasts or
+        commentary, or company news, with no bank or dealer business activity described.
       'false': A bank or dealer activity is described, or the article is not about markets or the economy at all.
     merged_from:
     - relevance.market_context_only
@@ -121,7 +129,8 @@ nodes:
     - global markets
     - sales and trading
     yes_no_question: Does the article describe a bank or dealer trading, making markets, underwriting or syndicating
-      deals, providing derivatives, or financing clients' securities positions?
+      deals, providing derivatives, or financing clients' securities positions? Price moves of bonds, currencies,
+      commodities, or stocks alone do not count.
     criteria:
       'true': Sales and trading, market making, derivatives, securities financing, structured products, or underwriting
         activity by a bank or dealer is reported.

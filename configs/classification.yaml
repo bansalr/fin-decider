@@ -29,8 +29,8 @@ corpus:
 
 ontology:
   path: gsib_basel_ontology_v1.1.json
-  version: "1.1.0"
-  sha256: "398f4297c05d22df6fa17301dbeafa30ce2af2ba52fd643d6a691f558b6814d8"
+  version: "1.1.1"
+  sha256: "2fd72d1932039bcd95a633869234b0289111b0ae78be03abc5d6608316891b48"
 
 input:
   mode: headline_plus_article
@@ -70,7 +70,7 @@ templates:
     path: templates/decision/boolean_v1.txt
     sha256: "df6bccc8cc3e851477f097455db5e4db4dc69a16273281ffc00129865e4717f6"
 
-# All decision models (Jev, Laya, d1) are reached through Vercel AI Gateway with byte-identical requests;
+# Primary model: jev (spec §0.1). All decision models (Jev, Laya, d1) are reached through Vercel AI Gateway with byte-identical requests;
 # only `model` and `provider_lock` differ. The gateway exposes no dated versions,
 # so identity is enforced via provider lock + returned-model check + catalog snapshot.
 models:

@@ -10,8 +10,17 @@ implementation (`src/classifier/`, `configs/classification.yaml`) makes.
 
 ### 0.1 Model panel
 
-Anchor models: Jev (`typesafe-ai/jev`) and Laya
-(`convaiinnovations/laya`).
+**Primary model: Jev (`typesafe-ai/jev`).** Chosen after the $5
+full-corpus diagnostic runs (2026-10-13): lowest cost per article (about
+$0.074 per 1,000 articles, 3-5x below d1 and Clef), highest synthetic
+dev-set accuracy, and closest to the three-model majority (odd one out
+on 324 of 14,699 shared articles vs 814 for d1 and 1,033 for Clef). The
+full-corpus run uses Jev; other models are comparators on samples.
+
+Laya (`convaiinnovations/laya`) was an anchor model but is no longer
+run: its real input limit through Vercel is about 512 tokens per
+question, it reached 0.72 dev-set accuracy, and its agreement with the
+other models was about kappa 0.3.
 
 Comparators in v1, all hosted decision models receiving the same
 rendered questions:
@@ -229,6 +238,25 @@ Workers AI exposes no pinned version: identity is enforced by an
 refuse to start without it), and the manifest records the Workers AI
 catalog entry and the current Hugging Face revision of `Cloudflare/clef`
 (§0.3 applies).
+
+### 0.12 Ontology 1.1.1 (informed by the diagnostic runs)
+
+Under the §0.10 freeze rule, this change was prompted by output from the
+1,000-article and $5 diagnostic runs and is recorded as such. Reading
+the articles on which the models disagreed showed three recurring false
+positives for "G-SIB activity": central-bank actions described as "the
+bank"; bank analysts' and economists' forecasts or commentary; and plain
+price moves in bonds, currencies, commodities, or stocks. Ontology 1.1.1
+(same node IDs and structure as 1.1.0) names all three explicitly in the
+`yes_no_question` of `relevance.gsib_activity`, lists the first two as
+market context in `relevance.market_context_only`, and excludes plain
+price moves in `business.markets`. Because the frozen template sends
+only the question text, the wording itself carries the exclusions.
+
+The dev set gained five cases for these patterns
+(`template_cases_v3.jsonl`). They were written after the errors were
+seen, so dev-set scores on them are optimistic. On 37 cases: Jev 0.988,
+d1 0.942, Clef 0.965.
 
 ### 0.11 End-of-run reports
 

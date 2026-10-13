@@ -8,7 +8,7 @@ from classifier.ontology import OntologyError, build_ontology, load_ontology
 def test_real_ontology_valid(cfg):
     onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
     assert onto.roots == ("relevance",)
-    assert onto.version == "1.1.0" and len(onto.nodes) == 48
+    assert onto.version == "1.1.1" and len(onto.nodes) == 48
     assert "business.treasury_alm" in onto.nodes and "treasury.funding_liquidity" in onto.nodes
     assert all(len(onto.node(n).children) <= 20 for n in onto.nodes)
 
