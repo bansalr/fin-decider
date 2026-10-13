@@ -116,3 +116,26 @@ async def test_run_and_resume(small_cfg):
     labels = results.leaf_labels(final)
     assert labels.height > 0
 
+
+
+async def test_cost_cap_counts_earlier_sessions(small_cfg):
+    from classifier.adapters.base import NodeDecision
+
+    class Paid(FakeAdapter):
+        async def classify(self, article, node, children, ctx):
+            d = await super().classify(article, node, children, ctx)
+            d.cost_usd = 0.01
+            return d
+
+    d, cfg = small_cfg
+    cfg = variant(d, ["models", "jev", "concurrency"], 1)
+    rc = prepare_run(cfg, model="jev", limit=None)
+    s1 = await run_model(rc, "jev", resume=False, max_cost_usd=0.02, adapter=Paid("jev"))
+    assert 0 < s1["articles"] < 12
+    man = json.loads((rc.run_dir / "manifest.json").read_text())
+    assert man["models"]["jev"]["cost_guard_hit"] is True
+    spent = man["models"]["jev"]["cost_usd_total"]
+    # A resumed session with the same cap must stop immediately: the run already spent it.
+    a2 = Paid("jev")
+    s2 = await run_model(rc, "jev", resume=True, max_cost_usd=0.02, adapter=a2)
+    assert s2["articles"] <= 1 and spent >= 0.02

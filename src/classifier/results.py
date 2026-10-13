@@ -135,6 +135,15 @@ def load_cache(run_dir: Path, model: str) -> tuple[dict[str, NodeDecision], set[
     return cache, complete, attempts
 
 
+def spent_usd(run_dir: Path, model: str) -> float:
+    """Provider cost already recorded for a run (each request counted once)."""
+    df = read_work(run_dir, model).select("article_id", "prediction_key", "provider_cost_usd", "reused_from_cache")
+    if df.is_empty():
+        return 0.0
+    calls = df.filter(~pl.col("reused_from_cache")).unique(subset=["article_id", "prediction_key"])
+    return float(calls["provider_cost_usd"].fill_null(0).sum())
+
+
 def complete_articles(run_dir: Path, model: str) -> set[str]:
     latest = latest_attempts(read_work(run_dir, model).select("article_id", "attempt", "status"))
     if latest.is_empty():

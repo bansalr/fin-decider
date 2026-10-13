@@ -13,3 +13,5 @@ classification_results/
 dist/
 reports/
 logs/
+labeling/*.csv
+labeling/*_meta.json

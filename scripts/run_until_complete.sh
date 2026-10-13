@@ -19,11 +19,15 @@ for mf in glob.glob("classification_results/*/manifest.json"):
     m = json.load(open(mf))
     if m.get("scope", {}).get("kind") == "full_corpus" and model in m.get("models", {}) and not m.get("dry_run"):
         done.append(m["models"][model].get("status"))
-print("COMPLETE" if "COMPLETE" in done else (done[0] if done else "NONE"))
+guard = [m["models"][model].get("cost_guard_hit") for mf in glob.glob("classification_results/*/manifest.json")
+         for m in [json.load(open(mf))] if m.get("scope", {}).get("kind") == "full_corpus" and model in m.get("models", {})
+         and not m.get("dry_run")]
+print("COMPLETE" if "COMPLETE" in done else "CAPPED" if any(guard) else (done[0] if done else "NONE"))
 PY
 )
   echo "$(date -u +%FT%TZ) exit $code, manifest status $status"
   if [ "$status" = "COMPLETE" ]; then echo "done"; exit 0; fi
+  if [ "$status" = "CAPPED" ]; then echo "cost cap reached; not resuming"; exit 3; fi
   if [ "$code" = "2" ]; then echo "fatal provider error (auth/identity); not retrying"; exit 2; fi
   sleep "$pause"
 done

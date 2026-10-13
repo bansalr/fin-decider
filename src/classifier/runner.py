@@ -310,12 +310,19 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
     if mcfg.max_input_chars and mcfg.max_input_chars < cfg.input.max_chars:
         input_cfg = cfg.input.model_copy(update={"max_chars": mcfg.max_input_chars})
     stats = {"articles": 0, "complete": 0, "incomplete": 0, "calls": 0, "cost_usd": 0.0, "input_tokens": 0}
+    # The cost cap covers the whole run, not just this session: count what earlier
+    # sessions of this run already spent (one row per request, by prediction key).
+    prior_cost = results.spent_usd(rc.run_dir, model) if resume else 0.0
+    if prior_cost:
+        _log(rc, f"[{model}] earlier sessions of this run spent ${prior_cost:.4f}")
     returned, providers = set(mman["returned_versions"]), set(mman["routing_providers"])
     it = iter(todo)
     stop = asyncio.Event()
+    cost_guard_hit = False
     t0 = time.monotonic()
 
     async def worker() -> None:
+        nonlocal cost_guard_hit
         while not stop.is_set():
             try:
                 row = next(it)
@@ -355,8 +362,10 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
                 if r["routing_provider"]:
                     providers.add(r["routing_provider"])
 
-            if max_cost_usd is not None and stats["cost_usd"] >= max_cost_usd and not stop.is_set():
-                _log(rc, f"[{model}] cost guard reached (${stats['cost_usd']:.4f} >= ${max_cost_usd}); stopping")
+            if max_cost_usd is not None and prior_cost + stats["cost_usd"] >= max_cost_usd and not stop.is_set():
+                _log(rc, f"[{model}] cost guard reached (${prior_cost + stats['cost_usd']:.4f} >= ${max_cost_usd}"
+                         f" for the run); stopping")
+                cost_guard_hit = True
                 stop.set()
             if stats["articles"] % progress_every == 0:
                 el = time.monotonic() - t0
@@ -391,6 +400,8 @@ async def run_model(rc: RunContext, model: str, *, resume: bool, max_cost_usd: f
                 "returned_versions": sorted(returned),
                 "routing_providers": sorted(providers),
                 "status": "COMPLETE" if finished and not fatal else "INCOMPLETE",
+                "cost_guard_hit": cost_guard_hit,
+                "cost_usd_total": round(prior_cost + stats["cost_usd"], 6),
                 "complete_articles": len(complete_after),
                 "last_session": stats | {"elapsed_s": session_s, "ended_at": utc_now(),
                                          "fatal": repr(fatal) if fatal else None},
