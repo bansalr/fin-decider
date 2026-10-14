@@ -147,6 +147,10 @@ class HttpDecisionAdapter(ClassificationAdapter):
         text = resp.text[:300]
         if code in (401, 403):
             raise FatalProviderError(f"authentication failed ({code}): {text}")
+        if code == 402:
+            # Out of prepaid credit: every further request fails the same way. Stop the run
+            # (resumable after a top-up) rather than retrying and marking articles incomplete.
+            raise FatalProviderError(f"payment required (402), provider credit exhausted: {text}")
         if code in (400, 404, 413, 422):
             raise ProviderFailure("INVALID_REQUEST", f"http_{code}", text, attempt)
         retry_after = None

@@ -230,3 +230,12 @@ async def test_choice_missing_option_is_model_error(cfg, monkeypatch):
         await a.classify(ART, onto.node("relevance"), onto.children("relevance"), ClassificationContext("x", tmpl))
     assert e.value.status == "MODEL_ERROR"
 
+
+
+async def test_402_out_of_credit_is_fatal(cfg, template, monkeypatch):
+    a, sleeps = make(cfg, lambda r: httpx.Response(402, json={"error": {"message": "A positive credit balance is required"}}),
+                     monkeypatch=monkeypatch)
+    root, children = onto_root(cfg)
+    with pytest.raises(FatalProviderError, match="402"):
+        await a.classify(ART, root, children, ClassificationContext("typesafe-ai/jev", template))
+    assert sleeps == []
