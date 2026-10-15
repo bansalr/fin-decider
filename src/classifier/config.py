@@ -47,8 +47,8 @@ class Dataset(Strict):
     # huggingface: one pinned file, file_sha256 is that file's hash.
     # github_fincausal: a pinned repo commit, file_sha256 hashes the sorted (path, sha256)
     # list of every ingested data file (see classifier.sources.fincausal).
-    provider: Literal["huggingface", "github_fincausal", "hf_twitter_topic", "hf_fomc", "cfpb_snapshot",
-                      "hf_edgar_gsib", "uci_reuters21578"]
+    provider: Literal["huggingface", "github_fincausal", "hf_twitter_topic", "hf_fomc", "hf_cfpb_archive",
+                      "hf_edgar_gsib", "uci_reuters21578", "hf_finmteb"]
     repository: str
     revision: str
     file: str
@@ -59,7 +59,7 @@ class Dataset(Strict):
     def _pinned(self) -> "Dataset":
         # Git/HF sources pin a commit; snapshot/archive sources (no commits) are pinned by file_sha256
         # alone and record their snapshot date or version as `revision`.
-        if self.provider in ("cfpb_snapshot", "uci_reuters21578"):
+        if self.provider in ("hf_cfpb_archive", "uci_reuters21578"):
             if not self.revision:
                 raise ValueError("revision must name the snapshot date or archive version")
         elif not GIT_SHA_RE.match(self.revision):

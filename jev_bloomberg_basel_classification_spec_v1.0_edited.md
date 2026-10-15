@@ -296,9 +296,18 @@ cost; runs are chosen by the user per run.
 |---|---|---|---|
 | `bench_twitter` | Twitter Financial News Topic (MIT) | HF commit + file hashes | Market-context topics expected not G-SIB |
 | `bench_fomc` | FOMC Communication (CC BY-NC 4.0, internal only) | HF commit + file hashes | Negative control: all expected not G-SIB |
-| `bench_cfpb` | CFPB complaint narratives (public) | snapshot date + zip hash | Lending leaves (mortgage, consumer) |
+| `bench_cfpb` | CFPB complaint narratives, CC0 pre-removal mirror (CFPB withdrew narratives 2026-08-14) | HF commit + parquet hashes | Lending leaves (mortgage, consumer) |
 | `bench_edgar` | EDGAR-CORPUS 10-K MD&A, US G-SIBs + controls (Apache 2.0) | HF commit + filtered-file hashes | Positive control by group (bank vs control) |
 | `bench_reuters` | Reuters-21578 ModApte (CC BY 4.0) | archive hash | Comparison only, reported per Reuters topic |
+| `bench_wiki_industry` | FinMTEB WikiCompany2Industry-en (license unstated; internal use) | HF commit + file hash | Reported per industry: Banking vs Financial services vs non-financial |
+| `bench_tradetheevent` | FinMTEB TradeTheEventNews (EDT press releases; internal use) | HF commit + file hash | Issuer-news control, group rate only |
+| `bench_usnews` | FinMTEB USnews (internal use) | HF commit + file hash | Cross-source check against the Bloomberg G-SIB rate |
+
+The FinMTEB-derived sets (Tang & Yang, EMNLP 2025) and FinBen
+candidates (Xie et al., NeurIPS 2024) came from screening the datasets
+of those two benchmarks against the criteria in the proposal; FinBen's
+gold-commodity headlines and credit-agreement sentences are gated on
+Hugging Face and are added once access is granted.
 
 Pre-registered expectations: each source module fixes, in code and
 before any run, the expected value (0/1) of named ontology nodes for

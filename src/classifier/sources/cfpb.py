@@ -1,26 +1,27 @@
-"""CFPB Consumer Complaint Database (consumerfinance.gov, public: "freely available for anyone to use").
+"""CFPB Consumer Complaint Database narratives, from a pre-removal archive.
 
-The database updates daily, so the pin is the SHA-256 of the exact zip snapshot downloaded (its
-date is the config `revision`). Only complaints with a consumer narrative are used; the product label
-is NOT shown to the model (headline empty, narrative only).
+The CFPB stopped publishing complaint narratives on 2026-08-14 (they now sit in its FOIA reading
+room), so the live bulk file and API no longer carry the text. This source reads the CC0 mirror
+`BEE-spoke-data/consumer-finance-complaints` on Hugging Face (4.7M complaints, original CFPB columns),
+pinned to a commit plus the hashes of its parquet files. It is a third-party copy of public-domain
+data that the CFPB has since withdrawn as "unverified"; use it for internal benchmarking.
 
-Sampling: per product group, the N complaints with the lowest SHA-256 of their Complaint ID, which is
-deterministic and independent of file order. Expectations (spec §0.14) map products onto lending
-leaves; groups without a clear mapping carry none.
+Only complaints with a narrative are used; the product label is NOT shown to the model (headline
+empty, narrative only). Sampling: per product group, the N complaints with the lowest SHA-256 of
+their Complaint ID (deterministic, independent of file order). Expectations (spec §0.14) map
+products onto lending leaves; groups without a clear mapping carry none.
 """
 
 from __future__ import annotations
 
-import csv
 import hashlib
-import io
-import zipfile
 from pathlib import Path
 
-from .common import GSIB, Builder, download, hash_files
+import polars as pl
 
-URL = "https://files.consumerfinance.gov/ccdb/complaints.csv.zip"
-ZIP = "complaints.csv.zip"
+from .common import GSIB, Builder, hash_files, hf_fetch
+
+FILES = [f"data/train-{i:05d}-of-00007.parquet" for i in range(7)]
 PER_GROUP = 1500
 LEND, CONS, MORT = "business.lending", "lending.consumer", "lending.residential_mortgage"
 EXPECT = {
@@ -62,37 +63,33 @@ def group_of(product: str, sub: str) -> str | None:
 
 
 def fetch(ds) -> Path:
-    local = Path(ds.local_dir)
-    local.mkdir(parents=True, exist_ok=True)
-    if not (local / ZIP).exists():
-        download(URL, local / ZIP)
-    return local
+    return hf_fetch(ds.repository, ds.revision, FILES, ds.local_dir)
 
 
 def files_sha256(local: Path) -> str:
-    return hash_files(local, [local / ZIP])
+    return hash_files(local, [local / f for f in FILES])
 
 
 def ingest(local: Path, ds):
-    csv.field_size_limit(10**9)
-    best: dict[str, list[tuple[str, dict]]] = {g: [] for g in EXPECT}
-    with zipfile.ZipFile(local / ZIP) as zf:
-        name = next(n for n in zf.namelist() if n.endswith(".csv"))
-        with zf.open(name) as fh:
-            for r in csv.DictReader(io.TextIOWrapper(fh, encoding="utf-8", errors="replace")):
-                text = (r.get("Consumer complaint narrative") or "").strip()
-                g = group_of(r.get("Product", ""), r.get("Sub-product", ""))
-                if not text or g is None:
-                    continue
-                key = hashlib.sha256(r["Complaint ID"].encode()).hexdigest()
-                best[g].append((key, r))
-                if len(best[g]) > 4 * PER_GROUP:  # keep memory bounded: retain the lowest keys
-                    best[g] = sorted(best[g], key=lambda x: x[0])[:PER_GROUP]
+    cols = ["Date received", "Product", "Sub-product", "Issue", "Consumer complaint narrative", "Company",
+            "Complaint ID"]
+    df = (pl.scan_parquet([str(local / f) for f in FILES]).select(cols)
+          .filter(pl.col("Consumer complaint narrative").is_not_null()
+                  & (pl.col("Consumer complaint narrative").str.strip_chars() != ""))
+          .collect())
+    df = df.with_columns(
+        pl.struct(["Product", "Sub-product"]).map_elements(lambda r: group_of(r["Product"], r["Sub-product"]),
+                                                            return_dtype=pl.String).alias("_group"),
+        pl.col("Complaint ID").cast(pl.String).map_elements(lambda c: hashlib.sha256(c.encode()).hexdigest(),
+                                                            return_dtype=pl.String).alias("_key"),
+    ).filter(pl.col("_group").is_not_null())
+    best = {g: [r for r in df.filter(pl.col("_group") == g).sort("_key").head(PER_GROUP).iter_rows(named=True)]
+            for g in EXPECT}
     b = Builder("cfpb", "CFPB")
     for g in sorted(best):
-        for _, r in sorted(best[g], key=lambda x: x[0])[:PER_GROUP]:
+        for r in best[g]:
             company = r.get("Company", "")
-            b.add(r["Consumer complaint narrative"], date=r.get("Date received", ""), source_id=r["Complaint ID"],
+            b.add(r["Consumer complaint narrative"], date=str(r.get("Date received") or ""), source_id=str(r["Complaint ID"]),
                   label=f"{r.get('Product', '')} / {r.get('Sub-product', '')}", group=g, expect=EXPECT[g],
                   extra={"company": company, "us_gsib": any(m in company.upper() for m in US_GSIB_MARKERS),
                          "issue": r.get("Issue", "")})

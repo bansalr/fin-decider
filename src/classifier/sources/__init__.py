@@ -10,9 +10,10 @@ PROVIDERS = {
     "github_fincausal": "fincausal",
     "hf_twitter_topic": "twitter_topic",
     "hf_fomc": "fomc",
-    "cfpb_snapshot": "cfpb",
+    "hf_cfpb_archive": "cfpb",
     "hf_edgar_gsib": "edgar_gsib",
     "uci_reuters21578": "reuters21578",
+    "hf_finmteb": "finmteb",
 }
 
 
