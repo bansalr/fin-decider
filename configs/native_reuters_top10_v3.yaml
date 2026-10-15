@@ -1,0 +1,124 @@
+# v3 QUESTIONS + CRITERIA (ontology_v3.json, template_v3.txt; developed on the training split only); otherwise identical to native_reuters_top10.yaml.
+# NATIVE-TASK benchmark (native_benchmarks/reuters_top10/README.md): Reuters-21578 R(10) topics on the
+# standard ModApte test set (2,545 stories), scored with macro-F1 against published results.
+# Separate from the G-SIB study: own ontology, template, corpus and results directory; nothing shared is changed.
+# Score with scripts/score_native_reuters.py. Run with --no-dev-eval (the synthetic dev set is G-SIB-only).
+benchmark:
+  name: native_reuters21578_top10
+  spec_version: "1.1.0"
+
+run:
+  label: baseline
+  seed: 917341            # MinHash seed for deduplication
+  allow_dirty_git: false
+
+dataset:
+  # Reuters-21578 (CC BY 4.0), same archive as bench_reuters: ModApte TEST stories with a top-10 topic.
+  provider: uci_reuters21578_top10
+  repository: UCI ML Repository #137
+  revision: "Distribution 1.0 (UCI download 2026-10-15)"
+  file: "reuters21578.zip"
+  file_sha256: "3741290be328c026dbb302ee7606d7afe65b21823c51dd3e5685347333b0da8a"
+  local_dir: data/bench/reuters21578
+
+corpus:
+  directory: corpus_native/reuters_top10
+  normalization_version: norm_v1
+  dedupe:
+    version: dedupe_v2_exact
+    exact: sha256_normalized_headline_body
+    near: none                   # exact duplicates only (user decision 2026-10-06)
+    num_perm: 128
+    shingle_words: 5
+    jaccard_threshold: 0.90
+    canonical_rule: earliest_date_then_article_id
+
+ontology:
+  path: native_benchmarks/reuters_top10/ontology_v3.json
+  version: "3.0.0"
+  sha256: "423d6589797b3db97b23ee59df226f6732877d3c31c6b8449fe1e0ad88861241"
+
+input:
+  mode: headline_plus_article
+  max_chars: 12000
+  separator: "\n\n"
+  truncation_strategy: head
+  normalization:
+    unicode: NFC
+    collapse_whitespace: true
+    strip_html: true
+
+hierarchy:
+  traversal:
+    mode: breadth_first
+    threshold: 0.30
+    max_depth: 10
+    max_nodes_per_article: 100
+  classification:
+    positive_threshold: 0.50
+  materialize_skipped_by_routing: false
+
+templates:
+  # Own copy (one line: the node's yes/no question), so the G-SIB templates can change independently.
+  reuters_top10_v3:
+    kind: boolean
+    path: native_benchmarks/reuters_top10/template_v3.txt
+    sha256: "97e9eac8e02122cfee3ae802dc5253d1e58aa20b687d608025c5b829868fe914"
+
+models:
+  jev:
+    enabled: true
+    adapter: jev
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: typesafe-ai/jev
+    provider_lock: [typesafe-ai]
+    api_key_env: VERCEL_API_KEY
+    template: reuters_top10_v3
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  d1:
+    enabled: true
+    adapter: d1
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: liquid/d1
+    provider_lock: [liquid]
+    api_key_env: VERCEL_API_KEY
+    template: reuters_top10_v3
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  # Cloudflare's open-weight decision model on Workers AI. Same shared template;
+  # the adapter only renames boolean -> noul. expected_model_returned is pinned
+  # from the first live probe (runs refuse to start without it).
+
+  clef:
+    enabled: true
+    adapter: clef
+    provider: cloudflare_workers_ai
+    endpoint: https://api.cloudflare.com/client/v4
+    model: "@cf/cloudflare/clef"
+    provider_lock: []
+    api_key_env: CLOUDFLARE_API_TOKEN
+    account_id_env: CLOUDFLARE_ACCOUNT_ID
+    price_per_m_input_tokens: 0.24
+    expected_model_returned: clef      # pinned from live probe 2026-10-07
+    template: reuters_top10_v3
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  # ── Choice-mode comparison arms: same models, choice_v1 template ──────────────
+
+output:
+  directory: classification_results_native
+  format: parquet
+  shard_rows: 5000
+  include_raw_provider_response: false

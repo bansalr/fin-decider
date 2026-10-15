@@ -105,3 +105,14 @@ def test_training_split_is_a_separate_corpus(tmp_path):
     assert p["source_id"].to_list() == ["5"] and p["split"][0] == "train" and a["article_id"][0].startswith("rtr10tr_")
     dev, test = load_config(ROOT / "configs/native_reuters_top10_train.yaml"), load_config(CFG)
     assert dev.corpus.directory != test.corpus.directory
+
+
+def test_v3_ontology_has_criteria_for_every_topic():
+    cfg = load_config(ROOT / "configs/native_reuters_top10_v3.yaml")
+    onto = load_ontology(ROOT / cfg.ontology.path, cfg.ontology.sha256)
+    t = cfg.templates["reuters_top10_v3"]
+    tmpl = load_template(ROOT / t.path, sha256_file(ROOT / t.path), "boolean")
+    tmpl.check_ontology(onto)
+    for c in onto.node("topics").children:
+        q = tmpl.render(onto.node("topics"), onto.node(c))
+        assert q["instructions"] and q["criteria"]["true"] and q["criteria"]["false"]

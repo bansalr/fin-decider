@@ -1,0 +1,6 @@
+[instructions]
+{yes_no_question}
+[criteria.true]
+{criteria_true}
+[criteria.false]
+{criteria_false}

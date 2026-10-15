@@ -1,0 +1,185 @@
+{
+ "ontology": {
+  "id": "reuters21578_top10_topics",
+  "version": "3.0.0",
+  "title": "Reuters-21578 R(10) topics (native-task benchmark)",
+  "description": "v3: every topic has a precise question plus explicit criteria for what counts and what does not, stating Reuters' indexing conventions. Written from Jev v2.1 errors (false positives and misses) on the 1,000-story ModApte TRAINING sample (run jev-dfbc43d1a3955222). Primary evaluation: the 5,400 training stories outside that sample. The test split is reported once, with the caveat that its v1 false positives had been examined.",
+  "roots": [
+   "topics"
+  ],
+  "changes_from": "1.0.0"
+ },
+ "nodes": {
+  "topics": {
+   "name": "Reuters topics",
+   "type": "multi_label",
+   "question": "Which Reuters-21578 topics does the article cover?",
+   "definition": "The ten most frequent Reuters-21578 TOPICS categories (the R(10) benchmark). Flat and multi-label: each topic is decided independently.",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "children": [
+    "topic.earn",
+    "topic.acq",
+    "topic.money-fx",
+    "topic.grain",
+    "topic.crude",
+    "topic.trade",
+    "topic.interest",
+    "topic.ship",
+    "topic.wheat",
+    "topic.corn"
+   ]
+  },
+  "topic.earn": {
+   "name": "Earnings and Earnings Forecasts",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'earn' (Earnings and Earnings Forecasts).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article's news a specific company's earnings: its reported financial results for a period, a forecast of its earnings, a dividend or distribution, a stock split, or the effect of an event on its reported earnings?",
+   "reuters_topic": "earn",
+   "criteria": {
+    "true": "The article reports or forecasts a company's (or a trust's or partnership's) profit, loss, earnings per share or revenue for a period; declares, raises, cuts or omits a dividend or a distribution to unit holders; announces a stock split or stock dividend; reports a qualified audit opinion on its financial statements; or its main point is a gain, loss or charge the company will book, such as 'to post gain on unit sale'.",
+    "false": "The article is mainly about something else and earnings appear only as context: an acquisition, merger, bid, stake purchase or unit sale that quotes the target's sales or profits or mentions an earnings impact in passing; analysts' share-price commentary; the combined profits of an industry or an economy; a country's export earnings."
+   }
+  },
+  "topic.acq": {
+   "name": "Mergers/Acquisitions",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'acq' (Mergers/Acquisitions).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article's news a change, or a possible change, in who owns or controls a company, a business unit, or a stake in a company?",
+   "reuters_topic": "acq",
+   "criteria": {
+    "true": "Agreed, proposed, completed, terminated, rumoured or contemplated mergers, acquisitions, takeover bids, tender offers, leveraged or management buyouts, spinoffs, and sales of subsidiaries, divisions or business units; purchases or sales of shareholdings, including filings disclosing stakes of 5% or more; merger talks starting or ending; shareholder rights plans and other takeover defences; takeover speculation moving a stock.",
+    "false": "An earnings report, forecast or dividend that only mentions an acquisition, such as 'results include X, acquired in June' or 'restated for pooling of interests'; distribution or licensing agreements with no change in ownership; purchases of goods, equipment, commodities or oil and gas properties rather than of a company or its shares."
+   }
+  },
+  "topic.money-fx": {
+   "name": "Money/Foreign Exchange",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'money-fx' (Money/Foreign Exchange).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article mainly about foreign exchange (currencies and exchange rates) or about money-market liquidity (central-bank operations that add or drain short-term funds, and interbank money conditions)?",
+   "reuters_topic": "money-fx",
+   "criteria": {
+    "true": "Currency movements and exchange rates; central-bank intervention in currency markets; exchange-rate policy, currency accords (Plaza, Louvre, G-7 statements on currencies) and calls for a currency to rise or fall; currency controls and foreign-exchange reserves; central-bank money-market operations such as repurchase agreements, bill purchases or sales, liquidity assistance, tenders and reserve injections; interbank or call-money shortages and surpluses.",
+    "false": "A change in a commercial bank's prime, base or lending rate, or a central-bank decision or statement on its policy rate, with no currency or liquidity operation reported; a trade balance where the currency is only background; a company's foreign-exchange gains or losses; bond-market or stock-market commentary."
+   }
+  },
+  "topic.grain": {
+   "name": "Grain",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'grain' (Grain).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article mainly about grain, meaning cereal crops: wheat, corn (maize), barley, oats, rye, sorghum, millet or rice?",
+   "reuters_topic": "grain",
+   "criteria": {
+    "true": "Cereal crop production, harvests, plantings and estimates; sales, purchases, tenders, export subsidies or credits, and shipments of grain; grain prices, futures and stocks; grain freight fixtures; farm-programme news for grain crops, such as acreage reduction, loan rates, deficiency payments, set-asides and the conservation reserve; trade disputes over grain.",
+    "false": "Oilseeds, soybeans, sugar, cotton or livestock with no cereals discussed; a company's results; grain mentioned only in passing in an article about something else, such as a list of a country's exports."
+   }
+  },
+  "topic.crude": {
+   "name": "Crude Oil",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'crude' (Crude Oil).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article mainly about crude oil or the oil industry's supply side: oil prices, production, OPEC, supply and stocks, exploration and drilling, oil fields and properties, refining, or oil policy?",
+   "reuters_topic": "crude",
+   "criteria": {
+    "true": "Oil prices and markets; production, output cuts and quotas, OPEC meetings and policy; supply, demand, imports, exports and inventories of crude oil and products; exploration, discoveries, drilling and drilling rights; sales or purchases of oil fields, concessions, oil and gas properties, reserves or refineries; refinery operations and closures; oil taxation and energy policy; disruptions to oil supply such as pipeline damage or attacks on tankers.",
+    "false": "A takeover bid, stake purchase or share deal involving an oil company, where the article is about the corporate transaction; earnings reports, dividends, writedowns or royalty distributions of oil companies or trusts; a country's trade or economic data in which oil is only one cause; natural gas, LPG or other energy news with no crude oil."
+   }
+  },
+  "topic.trade": {
+   "name": "Trade",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'trade' (Trade).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article mainly about international trade as an economic or policy matter between countries: trade balances, overall exports or imports, or trade policy and disputes?",
+   "reuters_topic": "trade",
+   "criteria": {
+    "true": "A country's or region's trade balance, deficit or surplus, or its total export or import figures; tariffs, quotas, import bans or controls, duties and other trade barriers; trade negotiations, agreements, disputes, retaliation or sanctions between countries, including GATT talks and barter or countertrade pacts; demands that a country open its market to foreign goods; protectionist legislation.",
+    "false": "A specific sale, purchase, tender or shipment of a commodity, such as 'Egypt buys 200,000 tonnes of wheat'; export-subsidy, credit-guarantee or food-aid deals for a commodity (EEP, PL-480, CCC); crop, supply or export forecasts for one commodity; commodity export volumes or freight reports; oil production, OPEC output, quotas or prices; currency stories that mention the trade deficit only as background; company news."
+   }
+  },
+  "topic.interest": {
+   "name": "Interest Rates",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'interest' (Interest Rates).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article mainly about the level or a change of interest rates: official central-bank rates, banks' lending or deposit rates, or market interest rates?",
+   "reuters_topic": "interest",
+   "criteria": {
+    "true": "A central bank sets, cuts, raises or holds its discount, repurchase, Lombard or other official rate, or officials discuss whether to change it; banks change prime, base, lending or deposit rates; money-market, call-money, Treasury-bill or deposit rates are reported as having moved; forecasts of, or calls for, higher or lower interest rates.",
+    "false": "A money-market liquidity operation reported without a rate change as the news; a currency or exchange-rate story that mentions rates only as background; bond or futures market commentary where rates are not the subject; company news that mentions interest costs or interest income; interest rates named only as one factor among many."
+   }
+  },
+  "topic.ship": {
+   "name": "Shipping",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'ship' (Shipping).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article mainly about shipping itself: merchant ships and their operation, ports, freight and chartering, maritime accidents, or the shipbuilding and seafaring industries?",
+   "reuters_topic": "ship",
+   "criteria": {
+    "true": "Ship movements, charters and freight-rate fixtures; port operations, closures and congestion; strikes or bans by seamen, dockers, tug crews or port unions; accidents, sinkings, groundings and attacks involving merchant ships; protection of merchant shipping, such as naval escorts for tankers; shipbuilding, ship repair and shipbreaking; navigation conditions on seaways and waterways.",
+    "false": "A commodity sale, tender or export volume that only says goods were 'shipped' or gives shipment dates; earnings, dividends, acquisitions or share offerings of shipping, freight or shipyard companies; trucking, rail or air freight; military naval operations that do not concern merchant shipping."
+   }
+  },
+  "topic.wheat": {
+   "name": "Wheat",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'wheat' (Wheat).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article report specific information about wheat (including wheat flour): its crop, production, sales, purchases, tenders, subsidies, prices, stocks, or a policy that affects wheat specifically?",
+   "reuters_topic": "wheat",
+   "criteria": {
+    "true": "Wheat is named and something specific is reported about it: a wheat crop estimate, a wheat sale, tender or export-subsidy offer, wheat prices or stocks, or a policy affecting wheat in particular.",
+    "false": "Grain or cereals in general with no specific information about wheat; wheat named only in a list of commodities or in a table without being discussed; freight fixtures for wheat cargoes; other cereals."
+   }
+  },
+  "topic.corn": {
+   "name": "Corn",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'corn' (Corn).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article report specific information about corn (maize): its crop, production, sales, purchases, tenders, subsidies, prices, stocks, or a policy that affects corn specifically?",
+   "reuters_topic": "corn",
+   "criteria": {
+    "true": "Corn or maize is named and something specific is reported about it: a corn crop estimate, a corn sale, tender or commitment, corn prices or stocks, or a policy affecting corn in particular.",
+    "false": "Grain or cereals in general with no specific information about corn; corn named only in a list of commodities or in a table without being discussed; freight fixtures for maize cargoes; sorghum (milo) or other cereals."
+   }
+  }
+ }
+}

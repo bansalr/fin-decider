@@ -78,14 +78,20 @@ def metrics(gold: list[set[str]], pred: list[set[str]], labels=TOP10) -> dict:
     }
 
 
-def score(run_dir: Path, model: str, corpus_dir: Path) -> dict:
+def score(run_dir: Path, model: str, corpus_dir: Path, skip_first: int = 0) -> dict:
+    """skip_first: leave out the first N canonical stories by article_id, the ones `classify run --limit N`
+    covers (the development sample), so a full run is scored on held-out stories only."""
     prov = pl.read_parquet(corpus_dir / "provenance.parquet")
+    skipped = set(pl.read_parquet(corpus_dir / "canonical.parquet", columns=["article_id"])
+                  .sort("article_id").head(skip_first)["article_id"].to_list()) if skip_first else set()
     to_canon = dict(pl.read_parquet(corpus_dir / "clusters.parquet")
                     .select("article_id", "canonical_article_id").iter_rows())
     pred, failed = load_predictions(run_dir, model)
     gold, got, missing, failed_rows = [], [], 0, 0
     for aid, label in prov.select("article_id", "label").iter_rows():
         c = to_canon.get(aid, aid)
+        if c in skipped:
+            continue
         if c in failed:
             failed_rows += 1
         elif c not in pred:
@@ -93,7 +99,8 @@ def score(run_dir: Path, model: str, corpus_dir: Path) -> dict:
         else:
             gold.append(set(label.split(";")))
             got.append(pred[c])
-    return {"source_rows": prov.height, "failed_rows": failed_rows, "missing_rows": missing,
+    return {"source_rows": prov.height - sum(to_canon.get(a, a) in skipped for a in prov["article_id"]),
+            "failed_rows": failed_rows, "missing_rows": missing,
             **metrics(gold, got)}
 
 
@@ -129,11 +136,13 @@ def main() -> None:
     ap.add_argument("--run", required=True, help="run directory")
     ap.add_argument("-m", "--model", default=None, help="default: the run's only model")
     ap.add_argument("--json", default=None, help="also write the scores as JSON")
+    ap.add_argument("--skip-first", type=int, default=0,
+                    help="leave out the first N stories by article_id (the --limit N development sample)")
     a = ap.parse_args()
     cfg = load_config(a.config)
     run = Path(a.run)
     model = a.model or next(iter(json.loads((run / "manifest.json").read_text())["models"]))
-    s = score(run, model, Path(cfg.corpus.directory))
+    s = score(run, model, Path(cfg.corpus.directory), a.skip_first)
     print(f"{cfg.benchmark.name} · {model} · {run.name}\n")
     print(render(s, model, published=cfg.benchmark.name == "native_reuters21578_top10"))
     if a.json:
