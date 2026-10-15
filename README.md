@@ -58,6 +58,15 @@ reprints a report. `--dry-run` swaps in an offline deterministic adapter to exer
 without network calls. `--resume` continues an interrupted run under the same run
 ID, reusing every successful decision.
 
+### Secondary corpus: FinCausal
+
+```bash
+.venv/bin/classify prepare -c configs/fincausal.yaml     # clone yseop/YseopLab at the pinned commit, ingest, dedupe
+.venv/bin/classify run -c configs/fincausal.yaml -m jev --max-cost-usd 3
+```
+
+Same ontology, template and models as the Bloomberg run; see spec §0.13.
+
 ## Outputs
 
 ```text

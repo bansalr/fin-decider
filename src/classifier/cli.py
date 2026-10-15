@@ -37,9 +37,17 @@ def validate(config: Path = CONFIG, check_dataset: bool = typer.Option(True), ov
         load_template(t.path, t.sha256, t.kind).check_ontology(onto)
         typer.echo(f"template ok: {name}")
     if check_dataset:
-        path = Path(cfg.dataset.local_dir) / cfg.dataset.file
-        verify(path, cfg.dataset.file_sha256)
-        typer.echo(f"dataset ok: {path}")
+        if cfg.dataset.provider == "github_fincausal":
+            from .sources import fincausal
+
+            got = fincausal.files_sha256(Path(cfg.dataset.local_dir))
+            if got != cfg.dataset.file_sha256:
+                raise ValueError(f"FinCausal data files hash {got} != pinned {cfg.dataset.file_sha256}")
+            typer.echo(f"dataset ok: {cfg.dataset.local_dir} @ {cfg.dataset.revision[:7]}")
+        else:
+            path = Path(cfg.dataset.local_dir) / cfg.dataset.file
+            verify(path, cfg.dataset.file_sha256)
+            typer.echo(f"dataset ok: {path}")
     enabled = [m for m, c in cfg.models.items() if c.enabled]
     check_credentials(cfg, enabled)
     typer.echo(f"credentials ok for: {', '.join(enabled)}")
@@ -53,8 +61,17 @@ def prepare(config: Path = CONFIG, workers: int = typer.Option(8)) -> None:
 
     cfg = _setup(config)
     t0 = time.monotonic()
-    path = fetch(cfg.dataset)
-    df = ingest(path)
+    if cfg.dataset.provider == "github_fincausal":
+        from .sources import fincausal
+
+        repo = fincausal.fetch(cfg.dataset.repository, cfg.dataset.revision, cfg.dataset.local_dir,
+                               cfg.dataset.file_sha256)
+        df, prov = fincausal.ingest(repo)
+        Path(cfg.corpus.directory).mkdir(parents=True, exist_ok=True)
+        prov.write_parquet(Path(cfg.corpus.directory) / "provenance.parquet")
+    else:
+        path = fetch(cfg.dataset)
+        df = ingest(path)
     typer.echo(f"ingested {df.height} rows in {time.monotonic() - t0:.0f}s")
     canonical, clusters, stats = dedupe(df, cfg.corpus.dedupe, cfg.run.seed, workers=workers)
     man = write_corpus(Path(cfg.corpus.directory), canonical, clusters, stats, cfg.corpus.dedupe,
@@ -138,6 +155,7 @@ def run(
 
 def _report(rc, *, show: int, dev_eval: bool, reports_dir: Path) -> None:
     """Downstream of classification: reads finished results, prints and saves the report."""
+    import polars as pl
     from report import devset, summary
     from report.render import render, render_tree
 
@@ -148,7 +166,8 @@ def _report(rc, *, show: int, dev_eval: bool, reports_dir: Path) -> None:
     m, mcfg = rc.model, rc.cfg.models[rc.model]
     if show:
         rows = summary._read_rows(rc.run_dir, m)
-        h = rc.corpus.select("article_id", "headline")
+        h = rc.corpus.select("article_id", pl.when(pl.col("headline") != "").then(pl.col("headline"))
+                             .otherwise(pl.col("article")).alias("headline"))  # headline-less corpora (FinCausal)
         typer.echo(f"\n── {m}: first {show} articles (✓ positive at {rc.cfg.hierarchy.classification.positive_threshold}, "
                    f"→ traversed at {rc.cfg.hierarchy.traversal.threshold})")
         for aid, headline in h.head(show).iter_rows():

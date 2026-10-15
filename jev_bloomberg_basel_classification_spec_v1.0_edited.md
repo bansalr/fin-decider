@@ -258,6 +258,30 @@ The dev set gained five cases for these patterns
 seen, so dev-set scores on them are optimistic. On 37 cases: Jev 0.988,
 d1 0.942, Clef 0.965.
 
+### 0.13 Secondary corpus: FinCausal
+
+`configs/fincausal.yaml` classifies the FinCausal shared-task data (FNP
+2020-2022, `github.com/yseop/YseopLab` at commit `33a933f`) with the
+same ontology, template, thresholds and models as the Bloomberg run;
+only the benchmark name, dataset and corpus differ. It is a separate
+corpus, not merged into Bloomberg's, so the Bloomberg corpus hash and
+completed runs are unaffected.
+
+- Content: 1-3 sentence segments from financial news (2020) and SEC
+  10-K MD&A sections (2022), not full articles. 45,428 source rows,
+  36,372 after exact deduplication (median 181 characters). The
+  repository's non-financial folders (NTCIR MedNLP, SMM4H) are excluded.
+- Pinning: the commit plus a SHA-256 over the sorted (path, sha256)
+  list of the 66 ingested CSVs; `classify validate` and `prepare`
+  fail on any change.
+- Provenance: `corpus_fincausal/provenance.parquet` keeps every source
+  row with its file, year, task, original index, and FinCausal labels
+  (`gold_causal`, cause and effect spans).
+- FinCausal's labels annotate causality, not G-SIB activity, so they
+  give no accuracy measure for this ontology. Only about 6% of segments
+  mention banking terms. The repository carries no license file; reuse
+  terms should be checked before publishing results built on it.
+
 ### 0.11 End-of-run reports
 
 At the user's request, every `classify run` ends by printing a report

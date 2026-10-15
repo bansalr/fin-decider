@@ -140,7 +140,7 @@ def dedupe(df: pl.DataFrame, params: Dedupe, seed: int, workers: int = 8) -> tup
         pl.len().alias("cluster_size"),
     )
     members = members.join(canon, on="_cluster", how="left").with_columns(
-        pl.col("canonical_article_id").str.replace("^blbg_", "clu_").alias("cluster_id"),
+        pl.col("canonical_article_id").str.replace("^[a-z]+_", "clu_").alias("cluster_id"),
         pl.when(pl.col("row_index") == pl.col("_canon_row"))
         .then(pl.lit("self"))
         .when(pl.col("content_hash") == pl.col("_canon_hash"))

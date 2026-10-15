@@ -44,7 +44,10 @@ class Run(Strict):
 
 
 class Dataset(Strict):
-    provider: Literal["huggingface"]
+    # huggingface: one pinned file, file_sha256 is that file's hash.
+    # github_fincausal: a pinned repo commit, file_sha256 hashes the sorted (path, sha256)
+    # list of every ingested data file (see classifier.sources.fincausal).
+    provider: Literal["huggingface", "github_fincausal"]
     repository: str
     revision: str
     file: str
