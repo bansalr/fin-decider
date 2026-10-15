@@ -1,0 +1,145 @@
+{
+ "ontology": {
+  "id": "reuters21578_top10_topics",
+  "version": "2.0.0",
+  "title": "Reuters-21578 R(10) topics (native-task benchmark)",
+  "description": "v2: questions for earn, trade, interest, ship, crude and wheat revised against Jev v1 errors on a 1,000-story sample of the ModApte TRAINING split (run jev-2a76a81657ecb662), to state Reuters' indexing conventions. No test-split story was examined. v1 remains the pre-registered result.",
+  "roots": [
+   "topics"
+  ],
+  "changes_from": "1.0.0"
+ },
+ "nodes": {
+  "topics": {
+   "name": "Reuters topics",
+   "type": "multi_label",
+   "question": "Which Reuters-21578 topics does the article cover?",
+   "definition": "The ten most frequent Reuters-21578 TOPICS categories (the R(10) benchmark). Flat and multi-label: each topic is decided independently.",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "children": [
+    "topic.earn",
+    "topic.acq",
+    "topic.money-fx",
+    "topic.grain",
+    "topic.crude",
+    "topic.trade",
+    "topic.interest",
+    "topic.ship",
+    "topic.wheat",
+    "topic.corn"
+   ]
+  },
+  "topic.earn": {
+   "name": "Earnings and Earnings Forecasts",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'earn' (Earnings and Earnings Forecasts).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article report a company's earnings, profits, losses or other financial results, or a forecast of them, or a dividend declaration or change, or a stock split?",
+   "reuters_topic": "earn"
+  },
+  "topic.acq": {
+   "name": "Mergers/Acquisitions",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'acq' (Mergers/Acquisitions).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article report a merger, acquisition or takeover, such as a proposed, agreed or completed purchase of a company, a business unit, or a stake in a company?",
+   "reuters_topic": "acq"
+  },
+  "topic.money-fx": {
+   "name": "Money/Foreign Exchange",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'money-fx' (Money/Foreign Exchange).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article concern money markets or foreign exchange, such as currency exchange rates, currency trading or intervention, or money-market conditions and liquidity?",
+   "reuters_topic": "money-fx"
+  },
+  "topic.grain": {
+   "name": "Grain",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'grain' (Grain).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article concern grain, such as wheat, corn, rice, barley, sorghum, oats or other cereal crops, including their production, trade, prices or supplies?",
+   "reuters_topic": "grain"
+  },
+  "topic.crude": {
+   "name": "Crude Oil",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'crude' (Crude Oil).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article about crude oil itself, such as oil prices, production, output quotas, supply, exports, reserves or exploration? The financial results or takeovers of oil companies do not count unless the article is mainly about the oil market.",
+   "reuters_topic": "crude"
+  },
+  "topic.trade": {
+   "name": "Trade",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'trade' (Trade).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article about international trade as an economic or policy matter, such as a country's trade balance, deficit or surplus, overall exports or imports, tariffs, quotas, or trade talks, disputes or agreements between countries? A single sale, tender or shipment of a commodity does not count.",
+   "reuters_topic": "trade"
+  },
+  "topic.interest": {
+   "name": "Interest Rates",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'interest' (Interest Rates).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Are interest rates a main subject of the article, such as a change in or outlook for official, lending, deposit or market interest rates? Central-bank money-market operations or currency moves that only mention rates do not count.",
+   "reuters_topic": "interest"
+  },
+  "topic.ship": {
+   "name": "Shipping",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'ship' (Shipping).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Is the article about the shipping industry itself, such as merchant ships, ports, freight rates, maritime transport, or disruptions to shipping? Export volumes described as 'shipments', or the financial results or takeovers of shipping companies, do not count.",
+   "reuters_topic": "ship"
+  },
+  "topic.wheat": {
+   "name": "Wheat",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'wheat' (Wheat).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article specifically concern wheat, such as its production, trade, prices or supplies, rather than grain in general?",
+   "reuters_topic": "wheat"
+  },
+  "topic.corn": {
+   "name": "Corn",
+   "type": "leaf",
+   "parent": "topics",
+   "definition": "Reuters-21578 TOPICS category 'corn' (Corn).",
+   "includes": [],
+   "excludes": [],
+   "synonyms": [],
+   "yes_no_question": "Does the article concern corn (maize), such as its production, trade, prices or supplies?",
+   "reuters_topic": "corn"
+  }
+ }
+}

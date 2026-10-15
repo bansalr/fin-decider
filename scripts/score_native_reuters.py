@@ -99,7 +99,7 @@ def score(run_dir: Path, model: str, corpus_dir: Path) -> dict:
 
 def render(s: dict, name: str, published: bool = True) -> str:
     pc = lambda x: f"{100 * x:5.1f}"  # noqa: E731
-    out = [f"scored {s['stories']:,} of {s['source_rows']:,} test stories"
+    out = [f"scored {s['stories']:,} of {s["source_rows"]:,} stories"
            f" ({s['missing_rows']:,} without results, {s['failed_rows']:,} with a failed decision)"]
     if published and s["stories"] < s["source_rows"]:
         out.append("  ! incomplete: not comparable with the published numbers until all 2,545 are scored")
