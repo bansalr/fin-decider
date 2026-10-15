@@ -17,3 +17,5 @@ labeling/*.csv
 labeling/*_meta.json
 corpus_fincausal/
 corpus_bench/
+corpus_native/
+classification_results_native/
