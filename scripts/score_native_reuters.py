@@ -97,11 +97,11 @@ def score(run_dir: Path, model: str, corpus_dir: Path) -> dict:
             **metrics(gold, got)}
 
 
-def render(s: dict, name: str) -> str:
+def render(s: dict, name: str, published: bool = True) -> str:
     pc = lambda x: f"{100 * x:5.1f}"  # noqa: E731
     out = [f"scored {s['stories']:,} of {s['source_rows']:,} test stories"
            f" ({s['missing_rows']:,} without results, {s['failed_rows']:,} with a failed decision)"]
-    if s["stories"] < s["source_rows"]:
+    if published and s["stories"] < s["source_rows"]:
         out.append("  ! incomplete: not comparable with the published numbers until all 2,545 are scored")
     out += ["", f"  {'topic':10s} {'support':>7s} {'predicted':>9s}   prec  recall     F1"]
     for t, v in s["per_topic"].items():
@@ -109,8 +109,10 @@ def render(s: dict, name: str) -> str:
     m, u = s["macro"], s["micro"]
     out += ["", f"  macro      F1 {pc(m['f1'])}   precision {pc(m['precision'])}   recall {pc(m['recall'])}",
             f"  micro      F1 {pc(u['f1'])}   precision {pc(u['precision'])}   recall {pc(u['recall'])}",
-            f"  subset accuracy {pc(s['subset_accuracy'])}   Hamming accuracy {pc(s['hamming_accuracy'])}",
-            "", "comparison, macro-averaged % on the same test set (LabelFusion, FNP 2026, Table 1):",
+            f"  subset accuracy {pc(s['subset_accuracy'])}   Hamming accuracy {pc(s['hamming_accuracy'])}"]
+    if not published:  # development (training-split) runs: no published numbers to compare against
+        return "\n".join(out)
+    out += ["", "comparison, macro-averaged % on the same test set (LabelFusion, FNP 2026, Table 1):",
             f"  {'model':38s} {'training data':15s}    F1   prec  recall",
             f"  {name + ' (this run, zero-shot)':38s} {'none':15s} {pc(m['f1'])}  {pc(m['precision'])}  {pc(m['recall'])}"]
     for model, data, f1, p, r in PUBLISHED:
@@ -133,7 +135,7 @@ def main() -> None:
     model = a.model or next(iter(json.loads((run / "manifest.json").read_text())["models"]))
     s = score(run, model, Path(cfg.corpus.directory))
     print(f"{cfg.benchmark.name} · {model} · {run.name}\n")
-    print(render(s, model))
+    print(render(s, model, published=cfg.benchmark.name == "native_reuters21578_top10"))
     if a.json:
         Path(a.json).write_text(json.dumps(s, indent=2))
 

@@ -92,3 +92,16 @@ def test_metrics_follow_sklearn_conventions():
     assert m["micro"]["precision"] == pytest.approx(2 / 3) and m["micro"]["recall"] == pytest.approx(2 / 5)
     assert m["subset_accuracy"] == pytest.approx(1 / 4)
     assert m["hamming_accuracy"] == pytest.approx(1 - 4 / 16)
+
+
+def test_training_split_is_a_separate_corpus(tmp_path):
+    from classifier.sources import reuters21578_top10_train
+
+    _archive(tmp_path, '<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" NEWID="5"><TOPICS><D>earn</D></TOPICS>'
+                       '<TEXT><BODY>t</BODY></TEXT></REUTERS>'
+                       '<REUTERS TOPICS="YES" LEWISSPLIT="TEST" NEWID="6"><TOPICS><D>earn</D></TOPICS>'
+                       '<TEXT><BODY>u</BODY></TEXT></REUTERS>')
+    a, p = reuters21578_top10_train.ingest(tmp_path, None)
+    assert p["source_id"].to_list() == ["5"] and p["split"][0] == "train" and a["article_id"][0].startswith("rtr10tr_")
+    dev, test = load_config(ROOT / "configs/native_reuters_top10_train.yaml"), load_config(CFG)
+    assert dev.corpus.directory != test.corpus.directory

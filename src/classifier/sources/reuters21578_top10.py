@@ -34,17 +34,24 @@ def _text(body: str) -> tuple[str, str]:
 
 
 def ingest(local: Path, ds):
-    b = Builder("rtr10", "Reuters-21578 R(10) ModApte test")
+    return ingest_split(local, "TEST")
+
+
+def ingest_split(local: Path, split: str):
+    """split: "TEST" (the benchmark) or "TRAIN" (6,490 stories, for developing question wording)."""
+    prefix, name = ("rtr10", "Reuters-21578 R(10) ModApte test") if split == "TEST" else \
+        ("rtr10tr", "Reuters-21578 R(10) ModApte train")
+    b = Builder(prefix, name)
     for sgm in _sgm_texts(local):
         for attrs, body in DOC.findall(sgm):
             a = dict(ATTR.findall(attrs))
-            if a.get("TOPICS") != "YES" or a.get("LEWISSPLIT") != "TEST":
+            if a.get("TOPICS") != "YES" or a.get("LEWISSPLIT") != split:
                 continue
             topics = re.findall(r"<D>(.*?)</D>", _tag(body, "TOPICS"))
             gold = [t for t in TOP10 if t in topics]
             if not gold:
                 continue
             headline, text = _text(body)
-            b.add(text, headline=headline, date=_tag(body, "DATE"), source_id=a.get("NEWID", ""), split="test",
+            b.add(text, headline=headline, date=_tag(body, "DATE"), source_id=a.get("NEWID", ""), split=split.lower(),
                   label=";".join(gold), group=gold[0], expect={}, extra={"all_topics": topics})
     return b.frames()
