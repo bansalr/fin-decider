@@ -60,11 +60,13 @@ def test_edgar_passages_and_groups(tmp_path):
     for y in edgar_gsib.YEARS:
         (tmp_path / f"filtered_{y}.jsonl").write_text(
             json.dumps({"filename": f"jpm{y}.txt", "cik": "0000019617", "year": str(y), "section_7": md}) + "\n"
-            + json.dumps({"filename": f"aapl{y}.txt", "cik": "320193", "year": str(y), "section_7": md[:3000]}) + "\n")
+            + json.dumps({"filename": f"aapl{y}.txt", "cik": "320193", "year": str(y), "section_7": md[:6000]}) + "\n"
+            + json.dumps({"filename": f"wfc{y}.txt", "cik": "72971", "year": str(y), "section_7": "See annual report."}) + "\n")
     a, p = edgar_gsib.ingest(tmp_path, None)
     assert a["article"].str.len_chars().max() <= edgar_gsib.PASSAGE_CHARS
     groups = set(p["group"].to_list())
-    assert groups == {"bank:JPMorgan Chase", "control:Apple"}
+    assert groups == {"bank:JPMorgan Chase", "control:Apple"}  # Wells Fargo stub (by reference) dropped
+    assert all(json.loads(x)["g_sib"] for x, g in zip(p["extra"], p["group"]) if g.startswith("bank:"))
 
 
 def test_reuters_modapte(tmp_path):

@@ -83,10 +83,12 @@ def download(url: str, dest: Path) -> Path:
     return dest
 
 
-def stream_lines(url: str):
+def stream_lines(url: str, token: str | None = None):
     import httpx
 
-    with httpx.stream("GET", url, follow_redirects=True, timeout=300) as r:
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    with httpx.stream("GET", url, follow_redirects=True, headers=headers,
+                      timeout=httpx.Timeout(60, read=900)) as r:
         r.raise_for_status()
         yield from r.iter_lines()
 
