@@ -302,12 +302,14 @@ cost; runs are chosen by the user per run.
 | `bench_wiki_industry` | FinMTEB WikiCompany2Industry-en (license unstated; internal use) | HF commit + file hash | Reported per industry: Banking vs Financial services vs non-financial |
 | `bench_tradetheevent` | FinMTEB TradeTheEventNews (EDT press releases; internal use) | HF commit + file hash | Issuer-news control, group rate only |
 | `bench_usnews` | FinMTEB USnews (internal use) | HF commit + file hash | Cross-source check against the Bloomberg G-SIB rate |
+| `bench_gold_headlines` | FinBen gold-commodity headlines (CC BY-SA 3.0; gated, needs HF_TOKEN) | HF commit + file hashes | Price-move negative control: all expected not G-SIB, market context |
+| `bench_credit_agreements` | FinBen credit-agreement sentences from SEC filings (CC BY-SA 3.0; gated) | HF commit + file hashes | Lending group rate (no per-item expectation) |
 
 The FinMTEB-derived sets (Tang & Yang, EMNLP 2025) and FinBen
 candidates (Xie et al., NeurIPS 2024) came from screening the datasets
-of those two benchmarks against the criteria in the proposal; FinBen's
+of those two benchmarks against the criteria in the proposal. FinBen's
 gold-commodity headlines and credit-agreement sentences are gated on
-Hugging Face and are added once access is granted.
+Hugging Face; fetching them needs `HF_TOKEN` with access granted.
 
 Pre-registered expectations: each source module fixes, in code and
 before any run, the expected value (0/1) of named ontology nodes for

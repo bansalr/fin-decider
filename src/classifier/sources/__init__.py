@@ -14,6 +14,7 @@ PROVIDERS = {
     "hf_edgar_gsib": "edgar_gsib",
     "uci_reuters21578": "reuters21578",
     "hf_finmteb": "finmteb",
+    "hf_finben_gated": "finben",
 }
 
 

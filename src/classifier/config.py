@@ -48,7 +48,7 @@ class Dataset(Strict):
     # github_fincausal: a pinned repo commit, file_sha256 hashes the sorted (path, sha256)
     # list of every ingested data file (see classifier.sources.fincausal).
     provider: Literal["huggingface", "github_fincausal", "hf_twitter_topic", "hf_fomc", "hf_cfpb_archive",
-                      "hf_edgar_gsib", "uci_reuters21578", "hf_finmteb"]
+                      "hf_edgar_gsib", "uci_reuters21578", "hf_finmteb", "hf_finben_gated"]
     repository: str
     revision: str
     file: str

@@ -135,3 +135,23 @@ def test_finmteb_wiki_and_news(tmp_path):
         tmp_path / "corpus/train-00000-of-00001.parquet")
     a, p = finmteb.ingest(tmp_path, NS(repository="FinanceMTEB/TradeTheEventNews"))
     assert a["article_id"][0].startswith("edt_") and p["source_id"][0] == "7"
+
+
+def test_finben_headlines_and_credit(tmp_path, monkeypatch):
+    from types import SimpleNamespace as NS
+
+    from classifier.sources import finben
+
+    monkeypatch.setattr(finben, "FILES", {"TheFinAI/en-headlines": ["data/h.parquet"], "TheFinAI/en-ner": ["data/n.parquet"]})
+    (tmp_path / "data").mkdir()
+    q = "...can you identify a {} pertaining to gold? Your response should be Yes or No.\nText: {}\nAnswer:"
+    pl.DataFrame({"query": [q.format("Price or Not", "gold up $2"), q.format("Direction Up", "gold up $2"),
+                            q.format("Price or Not", "india curbs imports")],
+                  "answer": ["Yes", "Yes", "No"], "label_type": ["", "", "Price or Not"]}).write_parquet(tmp_path / "data/h.parquet")
+    a, p = finben.ingest(tmp_path, NS(repository="TheFinAI/en-headlines"))
+    assert sorted(a["article"].to_list()) == ["gold up $2", "india curbs imports"]  # one row per unique headline
+    assert dict(zip(a["article"], p["group"])) == {"gold up $2": "price", "india curbs imports": "no_price"}
+    assert all(json.loads(x) == {common.GSIB: 0, common.CTX: 1} for x in p["expect"])
+    pl.DataFrame({"text": ["The Borrower may draw the Facility."]}).write_parquet(tmp_path / "data/n.parquet")
+    a, p = finben.ingest(tmp_path, NS(repository="TheFinAI/en-ner"))
+    assert a.height == 1 and p["group"][0] == "credit_agreement"
