@@ -38,16 +38,13 @@ def files_sha256(repo: Path) -> str:
     return h.hexdigest()
 
 
-def fetch(repository: str, revision: str, local_dir: str, expected_sha256: str) -> Path:
-    repo = Path(local_dir)
+def fetch(ds) -> Path:
+    repo = Path(ds.local_dir)
     if not (repo / ".git").exists():
         repo.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "clone", "-q", f"https://github.com/{repository}.git", str(repo)], check=True)
-    subprocess.run(["git", "-C", str(repo), "fetch", "-q", "origin", revision], check=False)
-    subprocess.run(["git", "-C", str(repo), "checkout", "-q", revision], check=True)
-    actual = files_sha256(repo)
-    if actual != expected_sha256:
-        raise ValueError(f"FinCausal data files hash {actual} != pinned {expected_sha256}")
+        subprocess.run(["git", "clone", "-q", f"https://github.com/{ds.repository}.git", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "fetch", "-q", "origin", ds.revision], check=False)
+    subprocess.run(["git", "-C", str(repo), "checkout", "-q", ds.revision], check=True)
     return repo
 
 
@@ -58,7 +55,7 @@ def _rows(path: Path) -> list[dict[str, str]]:
     return [{(k or "").strip(): (v or "") for k, v in r.items()} for r in reader]
 
 
-def ingest(repo: Path) -> tuple[pl.DataFrame, pl.DataFrame]:
+def ingest(repo: Path, ds=None) -> tuple[pl.DataFrame, pl.DataFrame]:
     """-> (articles in the canonical schema, one row per source row; provenance)."""
     arts, prov = [], []
     i = 0

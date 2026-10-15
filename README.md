@@ -58,6 +58,18 @@ reprints a report. `--dry-run` swaps in an offline deterministic adapter to exer
 without network calls. `--resume` continues an interrupted run under the same run
 ID, reusing every successful decision.
 
+### All datasets
+
+```bash
+.venv/bin/classify datasets          # every config: items, est. Jev cost, prepared or not
+.venv/bin/classify prepare -c configs/bench_fomc.yaml
+.venv/bin/classify run -c configs/bench_fomc.yaml -m jev --max-cost-usd 1
+.venv/bin/python scripts/score_benchmark.py -c configs/bench_fomc.yaml --run classification_results/jev-<id>
+```
+
+Benchmark pipelines (spec §0.14): `bench_twitter`, `bench_fomc`, `bench_cfpb`, `bench_edgar`,
+`bench_reuters`, plus `fincausal` (§0.13) and the primary `classification` (Bloomberg).
+
 ### Secondary corpus: FinCausal
 
 ```bash

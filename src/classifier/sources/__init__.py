@@ -1,1 +1,22 @@
-"""Corpus sources other than the primary Bloomberg dataset."""
+"""Corpus sources other than the primary Bloomberg dataset (huggingface provider).
+
+Each module: fetch(ds) -> Path, files_sha256(local) -> str, ingest(local, ds) -> (articles, provenance).
+The pipeline verifies files_sha256 against the config's `file_sha256` before ingesting.
+"""
+
+from importlib import import_module
+
+PROVIDERS = {
+    "github_fincausal": "fincausal",
+    "hf_twitter_topic": "twitter_topic",
+    "hf_fomc": "fomc",
+    "cfpb_snapshot": "cfpb",
+    "hf_edgar_gsib": "edgar_gsib",
+    "uci_reuters21578": "reuters21578",
+}
+
+
+def source_for(provider: str):
+    if provider not in PROVIDERS:
+        raise ValueError(f"no source module for provider {provider!r}")
+    return import_module(f"{__name__}.{PROVIDERS[provider]}")

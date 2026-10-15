@@ -282,6 +282,34 @@ completed runs are unaffected.
   mention banking terms. The repository carries no license file; reuse
   terms should be checked before publishing results built on it.
 
+### 0.14 Benchmark pipelines
+
+Five further corpora are wired as pipelines, each with its own config
+(`configs/bench_*.yaml`), source module (`src/classifier/sources/`)
+and corpus directory (`corpus_bench/<name>/`). Like FinCausal, each
+shares the ontology, template, thresholds and models with the Bloomberg
+run; only the benchmark name, dataset and corpus differ.
+`classify datasets` lists every option with its size and estimated Jev
+cost; runs are chosen by the user per run.
+
+| Config | Source | Pin | Role |
+|---|---|---|---|
+| `bench_twitter` | Twitter Financial News Topic (MIT) | HF commit + file hashes | Market-context topics expected not G-SIB |
+| `bench_fomc` | FOMC Communication (CC BY-NC 4.0, internal only) | HF commit + file hashes | Negative control: all expected not G-SIB |
+| `bench_cfpb` | CFPB complaint narratives (public) | snapshot date + zip hash | Lending leaves (mortgage, consumer) |
+| `bench_edgar` | EDGAR-CORPUS 10-K MD&A, US G-SIBs + controls (Apache 2.0) | HF commit + filtered-file hashes | Positive control by group (bank vs control) |
+| `bench_reuters` | Reuters-21578 ModApte (CC BY 4.0) | archive hash | Comparison only, reported per Reuters topic |
+
+Pre-registered expectations: each source module fixes, in code and
+before any run, the expected value (0/1) of named ontology nodes for
+each item (`provenance.parquet`, column `expect`). These are mappings
+from the dataset's own labels (a Twitter topic, a CFPB product), not
+human judgements on our ontology. `scripts/score_benchmark.py` reports
+per-group positive rates and, where expectations exist, precision,
+recall, accuracy and false-positive rate. Mappings are not to be
+changed after seeing results; a change is a new source version and a
+new corpus hash.
+
 ### 0.11 End-of-run reports
 
 At the user's request, every `classify run` ends by printing a report

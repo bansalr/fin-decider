@@ -47,19 +47,24 @@ class Dataset(Strict):
     # huggingface: one pinned file, file_sha256 is that file's hash.
     # github_fincausal: a pinned repo commit, file_sha256 hashes the sorted (path, sha256)
     # list of every ingested data file (see classifier.sources.fincausal).
-    provider: Literal["huggingface", "github_fincausal"]
+    provider: Literal["huggingface", "github_fincausal", "hf_twitter_topic", "hf_fomc", "cfpb_snapshot",
+                      "hf_edgar_gsib", "uci_reuters21578"]
     repository: str
     revision: str
     file: str
     file_sha256: Sha256
     local_dir: str
 
-    @field_validator("revision")
-    @classmethod
-    def _pinned(cls, v: str) -> str:
-        if not GIT_SHA_RE.match(v):
-            raise ValueError(f"dataset revision must be a 40-hex commit SHA, got {v!r}")
-        return v
+    @model_validator(mode="after")
+    def _pinned(self) -> "Dataset":
+        # Git/HF sources pin a commit; snapshot/archive sources (no commits) are pinned by file_sha256
+        # alone and record their snapshot date or version as `revision`.
+        if self.provider in ("cfpb_snapshot", "uci_reuters21578"):
+            if not self.revision:
+                raise ValueError("revision must name the snapshot date or archive version")
+        elif not GIT_SHA_RE.match(self.revision):
+            raise ValueError(f"dataset revision must be a 40-hex commit SHA, got {self.revision!r}")
+        return self
 
 
 class Dedupe(Strict):

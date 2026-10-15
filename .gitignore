@@ -16,3 +16,4 @@ logs/
 labeling/*.csv
 labeling/*_meta.json
 corpus_fincausal/
+corpus_bench/

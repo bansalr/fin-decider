@@ -37,13 +37,13 @@ def validate(config: Path = CONFIG, check_dataset: bool = typer.Option(True), ov
         load_template(t.path, t.sha256, t.kind).check_ontology(onto)
         typer.echo(f"template ok: {name}")
     if check_dataset:
-        if cfg.dataset.provider == "github_fincausal":
-            from .sources import fincausal
+        if cfg.dataset.provider != "huggingface":
+            from .sources import source_for
 
-            got = fincausal.files_sha256(Path(cfg.dataset.local_dir))
+            got = source_for(cfg.dataset.provider).files_sha256(Path(cfg.dataset.local_dir))
             if got != cfg.dataset.file_sha256:
-                raise ValueError(f"FinCausal data files hash {got} != pinned {cfg.dataset.file_sha256}")
-            typer.echo(f"dataset ok: {cfg.dataset.local_dir} @ {cfg.dataset.revision[:7]}")
+                raise ValueError(f"{cfg.dataset.provider} files hash {got} != pinned {cfg.dataset.file_sha256}")
+            typer.echo(f"dataset ok: {cfg.dataset.local_dir} @ {cfg.dataset.revision[:12]}")
         else:
             path = Path(cfg.dataset.local_dir) / cfg.dataset.file
             verify(path, cfg.dataset.file_sha256)
@@ -61,12 +61,15 @@ def prepare(config: Path = CONFIG, workers: int = typer.Option(8)) -> None:
 
     cfg = _setup(config)
     t0 = time.monotonic()
-    if cfg.dataset.provider == "github_fincausal":
-        from .sources import fincausal
+    if cfg.dataset.provider != "huggingface":
+        from .sources import source_for
 
-        repo = fincausal.fetch(cfg.dataset.repository, cfg.dataset.revision, cfg.dataset.local_dir,
-                               cfg.dataset.file_sha256)
-        df, prov = fincausal.ingest(repo)
+        src = source_for(cfg.dataset.provider)
+        local = src.fetch(cfg.dataset)
+        got = src.files_sha256(local)
+        if got != cfg.dataset.file_sha256:
+            raise ValueError(f"{cfg.dataset.provider} files hash {got} != pinned {cfg.dataset.file_sha256}")
+        df, prov = src.ingest(local, cfg.dataset)
         Path(cfg.corpus.directory).mkdir(parents=True, exist_ok=True)
         prov.write_parquet(Path(cfg.corpus.directory) / "provenance.parquet")
     else:
@@ -78,6 +81,39 @@ def prepare(config: Path = CONFIG, workers: int = typer.Option(8)) -> None:
                        cfg.corpus.normalization_version, cfg.dataset.file_sha256, cfg.run.seed)
     typer.echo(json.dumps(man["stats"], indent=2))
     typer.echo(f"corpus_manifest_hash: {man['corpus_manifest_hash']}  ({time.monotonic() - t0:.0f}s)")
+
+
+@app.command()
+def datasets(configs_dir: Path = typer.Option(Path("configs"), "--configs-dir")) -> None:
+    """List every dataset config (run options): size, preparation status, estimated Jev cost."""
+    import json as _json
+
+    import polars as pl
+
+    # Measured Jev rates (spec §0.1, §0.13): per call ~440 tokens of questions plus the text itself
+    # (~4 chars/token), ~1.5 calls per item, $0.042 per million input tokens.
+    def jev_cost(n: int, avg_chars: float) -> float:
+        return n * 1.5 * (440 + avg_chars / 4) * 0.042 / 1e6
+
+    rows = []
+    for f in sorted(configs_dir.glob("*.yaml")):
+        try:
+            cfg = load_config(f)
+        except Exception as e:  # a broken config is listed, not hidden
+            rows.append((f.name, "?", "invalid: " + str(e)[:60], "", ""))
+            continue
+        corpus = Path(cfg.corpus.directory)
+        if (corpus / "canonical.parquet").exists():
+            c = pl.read_parquet(corpus / "canonical.parquet", columns=["headline", "article"])
+            n = c.height
+            chars = float((c["headline"].str.len_chars() + c["article"].str.len_chars().clip(upper_bound=cfg.input.max_chars)).mean())
+            status, size, cost = "prepared", f"{n:,}", f"~${jev_cost(n, chars):,.2f}"
+        else:
+            status, size, cost = "not prepared (classify prepare -c " + str(f) + ")", "", ""
+        rows.append((f.name, cfg.benchmark.name, status, size, cost))
+    typer.echo(f"{'config':26s} {'benchmark':28s} {'items':>9s} {'est. Jev':>10s}  status")
+    for name, bench, status, size, cost in rows:
+        typer.echo(f"{name:26s} {bench:28s} {size:>9s} {cost:>10s}  {status}")
 
 
 @app.command()
