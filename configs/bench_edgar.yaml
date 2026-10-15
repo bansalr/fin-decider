@@ -1,0 +1,261 @@
+# Benchmark pipeline (edgar): same ontology, template, thresholds and models as classification.yaml;
+# only benchmark name, dataset and corpus differ (spec §0.14). Score with scripts/score_benchmark.py.
+benchmark:
+  name: jev_edgar_gsib_basel
+  spec_version: "1.1.0"
+
+run:
+  label: baseline
+  seed: 917341            # MinHash seed for deduplication
+  allow_dirty_git: false
+
+dataset:
+  # EDGAR-CORPUS (Apache 2.0): 10-K MD&A of 8 US G-SIBs, 10 large US regional banks and 8 non-financial controls, 2018-2020 (MD&A stubs dropped), 6,000-char passages.
+  provider: hf_edgar_gsib
+  repository: eloukas/edgar-corpus
+  revision: "7e90f0f342569b35213445f809cfaf3b91f9964f"
+  file: "filtered_2018.jsonl + filtered_2019.jsonl + filtered_2020.jsonl (target CIKs only)"
+  file_sha256: "c5b597b2d59d78f618bb8ab49ee8b6583cb0a82fa5d5809f6f45aaf0afdceaf0"
+  local_dir: data/bench/edgar_gsib
+
+corpus:
+  directory: corpus_bench/edgar_gsib
+  normalization_version: norm_v1
+  dedupe:
+    version: dedupe_v2_exact
+    exact: sha256_normalized_headline_body
+    near: none                   # exact duplicates only (user decision 2026-10-06)
+    num_perm: 128
+    shingle_words: 5
+    jaccard_threshold: 0.90
+    canonical_rule: earliest_date_then_article_id
+
+ontology:
+  path: gsib_basel_ontology_v1.1.json
+  version: "1.1.1"
+  sha256: "2fd72d1932039bcd95a633869234b0289111b0ae78be03abc5d6608316891b48"
+
+input:
+  mode: headline_plus_article
+  max_chars: 12000
+  separator: "\n\n"
+  truncation_strategy: head
+  normalization:
+    unicode: NFC
+    collapse_whitespace: true
+    strip_html: true
+
+hierarchy:
+  traversal:
+    mode: breadth_first
+    threshold: 0.30
+    max_depth: 10
+    max_nodes_per_article: 100
+  classification:
+    positive_threshold: 0.50
+  materialize_skipped_by_routing: false
+
+templates:
+  # Frozen 2026-10-07 by the pre-declared rule (spec §0.8): max over templates of the
+  # minimum dev-set balanced accuracy across Jev, Laya, d1 and Clef.
+  boolean_v2c:
+    kind: boolean
+    path: templates/decision/boolean_v2c.txt
+    sha256: "c2fa018b7cdb7813f8f67b1d1c4ea158dfc857b1709c8fbba77df982908d2b4f"
+  # Comparison arm (spec §0.13): one multi-option question per node instead of one
+  # yes/no question per child. Options compete, so scores are shares of one unit.
+  choice_v1:
+    kind: choice
+    path: templates/decision/choice_v1.txt
+    sha256: "451960f8b451c701c9103df1f88439b22919b0eb0974900f989a2e4c603308f7"
+  boolean_v1:
+    kind: boolean
+    path: templates/decision/boolean_v1.txt
+    sha256: "df6bccc8cc3e851477f097455db5e4db4dc69a16273281ffc00129865e4717f6"
+
+# Primary model: jev (spec §0.1). All decision models (Jev, Laya, d1) are reached through Vercel AI Gateway with byte-identical requests;
+# only `model` and `provider_lock` differ. The gateway exposes no dated versions,
+# so identity is enforced via provider lock + returned-model check + catalog snapshot.
+models:
+  jev:
+    enabled: true
+    adapter: jev
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: typesafe-ai/jev
+    provider_lock: [typesafe-ai]
+    api_key_env: VERCEL_API_KEY
+    template: boolean_v2c
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  laya:
+    enabled: true
+    adapter: laya
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: convaiinnovations/laya
+    provider_lock: [boundless]
+    api_key_env: VERCEL_API_KEY
+    template: boolean_v2c
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+    # Laya via Boundless accepts ~512 tokens per question (article + question), despite
+    # the 8,192 the catalog lists (measured 2026-10-07: 1,870-2,080 chars max). Spec §7.
+    max_input_chars: 1500
+    shrink_on_422: true
+
+  d1:
+    enabled: true
+    adapter: d1
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: liquid/d1
+    provider_lock: [liquid]
+    api_key_env: VERCEL_API_KEY
+    template: boolean_v2c
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  # Cloudflare's open-weight decision model on Workers AI. Same shared template;
+  # the adapter only renames boolean -> noul. expected_model_returned is pinned
+  # from the first live probe (runs refuse to start without it).
+  clef:
+    enabled: true
+    adapter: clef
+    provider: cloudflare_workers_ai
+    endpoint: https://api.cloudflare.com/client/v4
+    model: "@cf/cloudflare/clef"
+    provider_lock: []
+    api_key_env: CLOUDFLARE_API_TOKEN
+    account_id_env: CLOUDFLARE_ACCOUNT_ID
+    price_per_m_input_tokens: 0.24
+    expected_model_returned: clef      # pinned from live probe 2026-10-07
+    template: boolean_v2c
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  # ── Choice-mode comparison arms: same models, choice_v1 template ──────────────
+  jev_choice:
+    enabled: true
+    adapter: jev
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: typesafe-ai/jev
+    provider_lock: [typesafe-ai]
+    api_key_env: VERCEL_API_KEY
+    template: choice_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  d1_choice:
+    enabled: true
+    adapter: d1
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: liquid/d1
+    provider_lock: [liquid]
+    api_key_env: VERCEL_API_KEY
+    template: choice_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  clef_choice:
+    enabled: true
+    adapter: clef
+    provider: cloudflare_workers_ai
+    endpoint: https://api.cloudflare.com/client/v4
+    model: "@cf/cloudflare/clef"
+    provider_lock: []
+    api_key_env: CLOUDFLARE_API_TOKEN
+    account_id_env: CLOUDFLARE_ACCOUNT_ID
+    price_per_m_input_tokens: 0.24
+    expected_model_returned: clef      # pinned from live probe 2026-10-07
+    template: choice_v1
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
+  # ── Self-hosted open-weight decision models (provider local_server) ──────────
+  # Served on a GPU next to the pipeline (Colab / rented GPU); disabled until a
+  # server is running. Enable per run: --set models.<name>.enabled=true
+  strands:
+    enabled: false
+    adapter: systemone
+    provider: local_server
+    endpoint: http://127.0.0.1:8000     # strands-decider serve <ckpt> --model-name strands-decider-2B-hobson-v19
+    model: StrandsAgents/strands-decider-2B-hobson-v19
+    revisions:
+      StrandsAgents/strands-decider-2B-hobson-v19: bb282d786bc251fd4e3068de3ada9ddbb38127cd
+    quantization: none
+    expected_model_returned: strands-decider-2B-hobson-v19
+    provider_lock: []
+    api_key_env: null
+    template: boolean_v2c
+    max_input_chars: 8000               # 3,072-token window shared with the questions
+    shrink_on_422: true
+    timeout_seconds: 120
+    retries: 3
+    concurrency: 4
+    allow_returned_model_mismatch: false
+
+  clm:
+    enabled: false
+    adapter: systemone
+    provider: local_server
+    endpoint: http://127.0.0.1:8700     # clm-serve over vllm serve Qwen/Qwen3-8B --runner pooling
+    model: Contrastive-LM/CLM-v0.1-8B
+    revisions:
+      Contrastive-LM/CLM-v0.1-8B: e939398d4556fcd9400c76fa8c5a513202f42b0a
+      Qwen/Qwen3-8B: b968826d9c46dd6066d109eabc6255188de91218
+    quantization: bnb8                  # 8-bit encoder to fit a 16 GB T4 (spec deviation)
+    expected_model_returned: clm-latest
+    request_model: clm-latest
+    provider_lock: []
+    api_key_env: null
+    template: boolean_v2c
+    max_input_chars: 6000               # encoder truncates at 2,048 tokens; keep truncation explicit
+    shrink_on_422: true
+    timeout_seconds: 120
+    retries: 3
+    concurrency: 8
+    allow_returned_model_mismatch: false
+
+  matilda:
+    enabled: false
+    adapter: systemone
+    provider: local_server
+    endpoint: http://127.0.0.1:8083     # python -m maincode_jev_serve.server --model-name matilda-jev-v1
+    model: Maincode/matilda-jev-v1
+    revisions:
+      Maincode/matilda-jev-v1: 3dd1a9db4c337f6aca80d4b682a1fcf712944d7e
+    quantization: none                  # bf16, ~49 GB VRAM: needs an 80 GB-class GPU
+    expected_model_returned: matilda-jev-v1
+    request_model: matilda-jev-v1
+    provider_lock: []
+    api_key_env: null
+    template: boolean_v2c
+    shrink_on_422: true                 # server answers 413 when input exceeds its context
+    timeout_seconds: 120
+    retries: 3
+    concurrency: 4
+    allow_returned_model_mismatch: false
+
+output:
+  directory: classification_results
+  format: parquet
+  shard_rows: 5000
+  include_raw_provider_response: false
