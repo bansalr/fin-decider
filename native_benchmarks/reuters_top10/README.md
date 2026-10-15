@@ -52,3 +52,25 @@ Title-only briefs (217) and the unprocessed stories are kept, as in the standard
 .venv/bin/python scripts/score_native_reuters.py --run classification_results_native/<run_id>
 ```
 Estimated Jev cost: about $0.10 for all 2,533 unique stories (one call per story).
+
+## Revised questions (v2.1), developed on the training split only
+After the pre-registered v1 run, the questions were revised **using only the ModApte training split** (`configs/native_reuters_top10_train*.yaml`, a fixed sample of the first 1,000 stories by article id).
+
+**v1 errors on that sample were mostly Reuters' filing conventions:**
+- **earn:** dividend declarations and stock splits are filed under earn, and v1 missed them.
+- **trade:** means trade policy and trade balances, not single commodity sales or shipments.
+
+**How v2.1 was chosen:**
+- **v2** reworded six topics.
+- **v2.1** keeps the v2 wording only where it raised F1 on the training sample: earn and trade. crude, interest, ship and wheat reverted to v1, because v2 made them too strict.
+- The test split was then run **once**, with v2.1 frozen (`ontology_v2_1.json`, commit before the run).
+
+| Jev, zero-shot (macro %) | Training-split sample F1 | Test F1 | Test precision | Test recall |
+|---|---:|---:|---:|---:|
+| v1 (pre-registered) | 83.3 | 84.8 | 79.4 | 94.1 |
+| v2 (intermediate, not run on test) | 84.0 | n/a | n/a | n/a |
+| **v2.1** | **86.1** | **87.1** | **81.4** | **95.0** |
+
+On the test set, v2.1 raised earn from 92.6 to 96.4 F1 and trade from 54.0 to 72.7.
+
+**How to report it:** report v1 as the zero-shot result. v2.1 is "zero-shot with category guidance written from training-split errors". The model never trains on labels, but the wording draws on 1,000 labelled training stories, so it sits between zero-shot and few-shot.
