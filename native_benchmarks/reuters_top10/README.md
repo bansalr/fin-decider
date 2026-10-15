@@ -74,3 +74,15 @@ After the pre-registered v1 run, the questions were revised **using only the Mod
 On the test set, v2.1 raised earn from 92.6 to 96.4 F1 and trade from 54.0 to 72.7.
 
 **How to report it:** report v1 as the zero-shot result. v2.1 is "zero-shot with category guidance written from training-split errors". The model never trains on labels, but the wording draws on 1,000 labelled training stories, so it sits between zero-shot and few-shot.
+
+## Results by model (test set, original v1 questions)
+All runs used ontology v1, threshold 0.50 and the same 2,533 unique stories, sending 32 requests at a time. Macro %.
+
+| Model | Run | F1 | Precision | Recall | Cost | Wall time |
+|---|---|---:|---:|---:|---:|---:|
+| Jev | `jev-e5aa4f0b3aa6f19b` | 84.8 | 79.4 | 94.1 | $0.08 | 17 s |
+| Clef | `clef-160ced0566d40ada` | 84.7 | 83.6 | 88.9 | $0.76 (estimated at list price) | 41 s |
+| d1 | `d1-061c50a6d9a8cd54` | 79.5 | 69.6 | 97.6 | $0.23 | 38 s |
+| Jev, v2.1 questions | `jev-eb5311047897e48b` | 87.1 | 81.4 | 95.0 | $0.09 | 73 s (50 gateway retries) |
+
+All three models over-flag **trade**: Jev flags 313 stories, d1 406 and Clef 237, against 117 true. So the problem is the question wording, not one model. Most false positives are a topic the story touches while its main Reuters topic is a close neighbour: 354 of Jev's 527 (67%).
