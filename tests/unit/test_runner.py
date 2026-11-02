@@ -167,3 +167,17 @@ def test_shards_partition_the_corpus_and_merge_back(small_cfg, repo_root):
     assert set(merged["article_id"].to_list()) == set(full.corpus["article_id"].to_list())
     with pytest.raises(ValueError):
         mod.merge([s.run_dir for s in shards[:2]])  # incomplete set of shards
+
+
+def test_ids_file_restricts_corpus_and_identity(small_cfg, tmp_path):
+    _, cfg = small_cfg
+    full = prepare_run(cfg, model="jev", limit=None)
+    pick = sorted(full.corpus["article_id"].to_list())[:2]
+    f = tmp_path / "ids.txt"
+    f.write_text("\n".join(pick) + "\n")
+    rc = prepare_run(cfg, model="jev", limit=None, ids_file=f)
+    assert sorted(rc.corpus["article_id"].to_list()) == pick
+    assert rc.scope["kind"] == "id_list" and rc.scope["articles"] == 2 and rc.run_hash != full.run_hash
+    f.write_text("not_an_article\n")
+    with pytest.raises(ValueError):
+        prepare_run(cfg, model="jev", limit=None, ids_file=f)

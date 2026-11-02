@@ -20,7 +20,7 @@ from .config import Config, check_credentials
 from .dedupe import load_corpus
 from .inputs import build_input
 from .ontology import Ontology, load_ontology
-from .provenance import environment_info, git_info, make_run_id, sha256_obj, utc_now
+from .provenance import environment_info, git_info, make_run_id, sha256_obj, sha256_text, utc_now
 from .templates import load_template
 from .traversal import classify_article
 
@@ -75,7 +75,7 @@ class RunContext:
 
 
 def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path = Path("."),
-                shard: tuple[int, int] | None = None) -> RunContext:
+                shard: tuple[int, int] | None = None, ids_file: Path | None = None) -> RunContext:
     onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
     if onto.version != cfg.ontology.version:
         raise ValueError(f"ontology version {onto.version} != configured {cfg.ontology.version}")
@@ -105,6 +105,16 @@ def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path =
         corpus = corpus.gather_every(count, offset=index)
         scope = {"kind": "shard", "index": index, "count": count, "articles": corpus.height,
                  "of": scope}
+
+    if ids_file is not None:
+        # A fixed list of articles (e.g. a labelled review queue); the list's hash is part of the run identity.
+        raw = Path(ids_file).read_bytes()
+        ids = [x.strip() for x in raw.decode().splitlines() if x.strip()]
+        missing = set(ids) - set(corpus["article_id"].to_list())
+        if missing:
+            raise ValueError(f"--ids-file: {len(missing)} ids are not canonical articles of this corpus, e.g. {sorted(missing)[0]}")
+        corpus = corpus.filter(pl.col("article_id").is_in(ids))
+        scope = {"kind": "id_list", "articles": corpus.height, "ids_sha256": sha256_text(raw.decode()), "of": scope}
 
     git = git_info(repo_root)
     if git["dirty"] and not cfg.run.allow_dirty_git:

@@ -166,6 +166,8 @@ def run(
     resume: bool = typer.Option(False, "--resume"),
     limit: Optional[int] = typer.Option(None, "--limit", help="Engineering run on the first N canonical articles"),
     shard: Optional[str] = typer.Option(None, "--shard", help="Run one slice I/N of the corpus (0-based), e.g. 2/8"),
+    ids_file: Optional[Path] = typer.Option(None, "--ids-file",
+                                            help="Run only the canonical article ids listed (one per line)"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Use the offline fake adapter; no network"),
     max_cost_usd: Optional[float] = typer.Option(None, "--max-cost-usd"),
     progress_every: int = typer.Option(500, "--progress-every"),
@@ -186,7 +188,7 @@ def run(
     models = model or [m for m, c in cfg.models.items() if c.enabled]
     finished = []
     for m in models:
-        rc = prepare_run(cfg, model=m, limit=limit, shard=_shard(shard))
+        rc = prepare_run(cfg, model=m, limit=limit, shard=_shard(shard), ids_file=ids_file)
         if dry_run:
             rc.run_dir = rc.run_dir.with_name(rc.run_dir.name + "_dryrun")
             rc.run_id = rc.run_dir.name

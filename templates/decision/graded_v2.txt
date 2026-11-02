@@ -1,0 +1,16 @@
+[instructions]
+Rate how well the article matches the question below, choosing the level that fits best. Levels 1-5 mean the article does not count as a match; levels 6-10 mean it does. Use the two rules given.
+Question: {yes_no_question}
+Counts as a match: {criteria_true}
+Does not count: {criteria_false}
+[levels]
+1: Clearly no: nothing in the article bears on the question.
+2: No: the article only shares a broad field with the question.
+3: No: the subject is mentioned only in passing or by name.
+4: No: the article touches the subject, but what it describes fits the 'does not count' rule.
+5: Borderline, leaning no: the article could be read as a match, but more likely does not count.
+6: Borderline, leaning yes: the article could be read either way, but more likely counts.
+7: Probably yes: the article probably fits the 'counts as a match' rule.
+8: Yes: the article fits the 'counts as a match' rule.
+9: Clearly yes: the article clearly and specifically fits the 'counts as a match' rule.
+10: Unmistakably yes: the article is centrally and specifically about what the question asks.
