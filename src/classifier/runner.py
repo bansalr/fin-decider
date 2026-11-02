@@ -74,7 +74,8 @@ class RunContext:
     dry_run: bool = False
 
 
-def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path = Path(".")) -> RunContext:
+def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path = Path("."),
+                shard: tuple[int, int] | None = None) -> RunContext:
     onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
     if onto.version != cfg.ontology.version:
         raise ValueError(f"ontology version {onto.version} != configured {cfg.ontology.version}")
@@ -95,6 +96,15 @@ def prepare_run(cfg: Config, *, model: str, limit: int | None, repo_root: Path =
     if limit is not None:
         corpus = corpus.head(limit)
         scope = {"kind": "engineering_first_n_by_article_id", "articles": corpus.height, "limit": limit}
+    if shard is not None:
+        # Every N-th article of the hash-sorted corpus, so shards are similar in size and article mix.
+        # Each shard is its own run; scripts/merge_shards.py recombines them into one result.
+        index, count = shard
+        if not 0 <= index < count:
+            raise ValueError(f"shard index must be in 0..{count - 1}, got {index}")
+        corpus = corpus.gather_every(count, offset=index)
+        scope = {"kind": "shard", "index": index, "count": count, "articles": corpus.height,
+                 "of": scope}
 
     git = git_info(repo_root)
     if git["dirty"] and not cfg.run.allow_dirty_git:

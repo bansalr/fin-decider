@@ -18,6 +18,17 @@ CONFIG = typer.Option(Path("configs/classification.yaml"), "--config", "-c")
 SET = typer.Option(None, "--set", help="Config override, e.g. models.jev.concurrency=8 (repeatable)")
 
 
+def _shard(spec: Optional[str]) -> Optional[tuple[int, int]]:
+    """'2/8' -> (2, 8)."""
+    if spec is None:
+        return None
+    try:
+        i, n = (int(x) for x in spec.split("/"))
+    except ValueError:
+        raise typer.BadParameter(f"--shard must look like I/N, got {spec!r}")
+    return i, n
+
+
 def _setup(config: Path, overrides: Optional[list[str]] = None):
     load_dotenv(override=False)
     return load_config(config, overrides)
@@ -154,6 +165,7 @@ def run(
     model: Optional[list[str]] = typer.Option(None, "--model", "-m", help="Model key(s); default: all enabled"),
     resume: bool = typer.Option(False, "--resume"),
     limit: Optional[int] = typer.Option(None, "--limit", help="Engineering run on the first N canonical articles"),
+    shard: Optional[str] = typer.Option(None, "--shard", help="Run one slice I/N of the corpus (0-based), e.g. 2/8"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Use the offline fake adapter; no network"),
     max_cost_usd: Optional[float] = typer.Option(None, "--max-cost-usd"),
     progress_every: int = typer.Option(500, "--progress-every"),
@@ -174,7 +186,7 @@ def run(
     models = model or [m for m, c in cfg.models.items() if c.enabled]
     finished = []
     for m in models:
-        rc = prepare_run(cfg, model=m, limit=limit)
+        rc = prepare_run(cfg, model=m, limit=limit, shard=_shard(shard))
         if dry_run:
             rc.run_dir = rc.run_dir.with_name(rc.run_dir.name + "_dryrun")
             rc.run_id = rc.run_dir.name
@@ -231,6 +243,7 @@ def report(
     config: Path = CONFIG,
     model: str = typer.Option(..., "--model", "-m"),
     limit: Optional[int] = typer.Option(None, "--limit"),
+    shard: Optional[str] = typer.Option(None, "--shard"),
     dry_run: bool = typer.Option(False, "--dry-run"),
     show: int = typer.Option(0, "--show"),
     dev_eval: bool = typer.Option(False, "--dev-eval/--no-dev-eval"),
@@ -245,7 +258,7 @@ def report(
     if output_dir is not None:
         sets.append(f"output.directory={output_dir}")
     cfg = _setup(config, sets)
-    rc = prepare_run(cfg, model=model, limit=limit)
+    rc = prepare_run(cfg, model=model, limit=limit, shard=_shard(shard))
     if dry_run:
         rc.run_dir = rc.run_dir.with_name(rc.run_dir.name + "_dryrun")
         rc.run_id, rc.dry_run = rc.run_dir.name, True

@@ -139,3 +139,31 @@ async def test_cost_cap_counts_earlier_sessions(small_cfg):
     a2 = Paid("jev")
     s2 = await run_model(rc, "jev", resume=True, max_cost_usd=0.02, adapter=a2)
     assert s2["articles"] <= 1 and spent >= 0.02
+
+
+def test_shards_partition_the_corpus_and_merge_back(small_cfg, repo_root):
+    import asyncio
+    import importlib.util
+
+    _, cfg = small_cfg
+    full = prepare_run(cfg, model="jev", limit=None)
+    shards = [prepare_run(cfg, model="jev", limit=None, shard=(i, 3)) for i in range(3)]
+    ids = [set(s.corpus["article_id"].to_list()) for s in shards]
+    assert set().union(*ids) == set(full.corpus["article_id"].to_list())
+    assert sum(len(x) for x in ids) == full.corpus.height  # no overlap
+    assert len({s.run_hash for s in shards} | {full.run_hash}) == 4  # each shard is its own run
+    with pytest.raises(ValueError):
+        prepare_run(cfg, model="jev", limit=None, shard=(3, 3))
+
+    for s in shards:
+        asyncio.run(run_model(s, "jev", resume=False, max_cost_usd=None, adapter=FakeAdapter("jev")))
+    spec = importlib.util.spec_from_file_location("merge_shards", repo_root / "scripts/merge_shards.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    out = mod.merge([s.run_dir for s in shards])
+    man = json.loads((out / "manifest.json").read_text())
+    assert man["scope"]["kind"] == "merged_shards" and man["scope"]["articles"] == full.corpus.height
+    merged = pl.read_parquet(out / "results" / "model=jev" / "part-000000.parquet")
+    assert set(merged["article_id"].to_list()) == set(full.corpus["article_id"].to_list())
+    with pytest.raises(ValueError):
+        mod.merge([s.run_dir for s in shards[:2]])  # incomplete set of shards

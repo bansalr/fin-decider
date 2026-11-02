@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Create the RunPod GPU pod for the CLM queue and start pod_supervisor.sh on it. Run from the Mac.
-#   cloud/runpod/launch.sh            # one NVIDIA L4 (default)
-#   GPU="NVIDIA A100-SXM4-80GB" cloud/runpod/launch.sh
+#   cloud/runpod/launch.sh            # first available of GPUS (L40S preferred), community cloud
+#   GPUS="NVIDIA L4" CLOUD=SECURE cloud/runpod/launch.sh
 # Needs RUNPOD_API_KEY (and optionally HF_TOKEN) in fin-decider/.env, and the key ~/.ssh/fin_decider_runpod.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 set -a; . ./.env; set +a
 : "${RUNPOD_API_KEY:?add RUNPOD_API_KEY to .env}"
-GPU=${GPU:-NVIDIA L4}
+GPUS=${GPUS:-NVIDIA L40S,NVIDIA GeForce RTX 5090,NVIDIA A100 80GB PCIe,NVIDIA L4,NVIDIA RTX PRO 4500 Blackwell}
+CLOUD=${CLOUD:-COMMUNITY}
 MAX_HOURS=${MAX_HOURS:-120}
 KEY=~/.ssh/fin_decider_runpod
 STATE=cloud/runpod/state
@@ -17,24 +18,25 @@ auth=(-H "Authorization: Bearer $RUNPOD_API_KEY" -H "Content-Type: application/j
 
 if [ -f $STATE/pod_id ]; then echo "pod already recorded: $(cat $STATE/pod_id) (delete $STATE/pod_id to launch another)"; exit 1; fi
 
-body=$(python3 - "$GPU" "$MAX_HOURS" <<'EOF'
+body=$(python3 - "$GPUS" "$MAX_HOURS" "$CLOUD" <<'EOF'
 import json, os, sys
-gpu, max_hours = sys.argv[1], sys.argv[2]
+gpus, max_hours, cloud = sys.argv[1].split(","), sys.argv[2], sys.argv[3]
 env = {"PUBLIC_KEY": open(os.path.expanduser("~/.ssh/fin_decider_runpod.pub")).read().strip(),
        "RUNPOD_API_KEY": os.environ["RUNPOD_API_KEY"], "MAX_HOURS": max_hours, "GRACE_HOURS": "12",
        "HF_HOME": "/workspace/hf"}
 if os.environ.get("HF_TOKEN"):
     env["HF_TOKEN"] = os.environ["HF_TOKEN"]
-print(json.dumps({"name": "fin-decider-clm", "gpuTypeIds": [gpu], "gpuCount": 1, "cloudType": "SECURE",
+print(json.dumps({"name": "fin-decider-clm", "gpuTypeIds": gpus, "gpuTypePriority": "custom", "gpuCount": 1, "cloudType": cloud, "supportPublicIp": True,
                   "imageName": "runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04",
                   "containerDiskInGb": 60, "volumeInGb": 150, "volumeMountPath": "/workspace",
-                  "ports": ["22/tcp"], "env": env, "interruptible": False}))
+                  "ports": ["22/tcp"], "env": env, "interruptible": False,
+                  "allowedCudaVersions": ["12.8", "12.9", "13.0"]}))
 EOF
 )
 resp=$(curl -s -X POST "${auth[@]}" -d "$body" $API/pods)
 id=$(echo "$resp" | python3 -c "import json,sys;print(json.load(sys.stdin).get('id',''))" 2>/dev/null || true)
 [ -n "$id" ] || { echo "create failed: $(echo "$resp" | head -c 600)"; exit 1; }
-echo "$id" > $STATE/pod_id; echo "pod $id created ($GPU); waiting for SSH..."
+echo "$id" > $STATE/pod_id; echo "pod $id created; waiting for SSH..."
 
 for i in $(seq 1 90); do
   info=$(curl -s "${auth[@]}" $API/pods/$id)
