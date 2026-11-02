@@ -42,6 +42,32 @@ Scored by `scripts/compare_graded_gsib.py` (output: `reports/graded/gsib_labelle
 
 Caveats: one labeller (Claude); 61 positives; the queue over-samples model disagreements.
 
+## Part 3: G-SIB benchmarks with known answers (same three arms, one commit)
+
+Share flagged G-SIB activity at 0.5 (configs `configs/bench_*_graded_study.yaml`, scored by
+`scripts/compare_graded_bench.py`):
+
+| Benchmark | Answer | Items | Production | + criteria | Graded |
+|---|---|---|---|---|---|
+| FOMC statements | no | 2,419 | 0.6% | 0.6% | 0.5% |
+| EDGAR non-bank filings | no | 273 | 0.0% | 0.7% | 0.0% |
+| Wikipedia, other industries | no | 3,164 | 0.4% | 0.3% | 0.1% |
+| EDGAR bank filings | yes | 1,136 | 99.5% | 97.1% | 87.7% |
+| Wikipedia banking articles | yes | 591 | 95.3% | 52.3% | 34.3% |
+| Credit-agreement clauses | yes | 607 | 35.1% | 33.8% | 22.6% |
+
+Pooled (8,190 items): F1 at 0.5 0.893 / 0.813 / 0.725; AUC 0.988 / 0.988 / 0.944. Cutoffs tuned on the 300
+labelled articles did not transfer. The benchmarks' "yes" is source-level (a bank's filing, a banking article,
+a credit-agreement clause); most items the stricter arms reject report no bank activity (bank profiles, risk
+boilerplate, legal clauses). Conclusion: criteria and graded scoring make Jev stricter; whether that is better
+depends on whether G-SIB activity means "reports a bank doing business" (strict) or "from/about a bank" (loose).
+
+Runs (jev / jev_v2a / jev_graded): FOMC `jev-18195a947f9fc24b`, `jev_v2a-b23c1fa686453aa0`,
+`jev_graded-05265777f5ba44d7`; EDGAR `jev-acbac75e1fe2a85e`, `jev_v2a-c32267af879657e8`,
+`jev_graded-e3ebfaf0a1515376`; credit agreements `jev-ae4cb0bcae70b6f9`, `jev_v2a-ca5f68f236968b12`,
+`jev_graded-a58d3fc77f3365f8`; wiki industry `jev-ebfb5d360d07cb87`, `jev_v2a-75e7036d5c8d503a`,
+`jev_graded-be1d15506229cd9c`. Cost $2.98 (study total $5.92).
+
 ## Reproduce
 ```
 classify run -c configs/native_reuters_top10_train_graded_v2.yaml -m jev --no-dev-eval        # train split
@@ -54,4 +80,4 @@ python scripts/compare_graded_gsib.py jev=<run> jev_v2a=<run> jev_graded=<run>
 ```
 Runs: Reuters train v3.1 `jev-16bc31eb63e4f789`, train graded v2 `jev-7d08c09027d27f83`, test v3.1
 `jev-1122dced82d61b05`, test graded v2 `jev-e9fe5eed997073bc`; G-SIB `jev-b0a13f2509f7ef84`,
-`jev_v2a-8083d5cf4c331d41`, `jev_graded-fdefadbec9d45b42`. Total Jev cost of the study: $2.94.
+`jev_v2a-8083d5cf4c331d41`, `jev_graded-fdefadbec9d45b42`. Jev cost of parts 1-2: $2.94.
