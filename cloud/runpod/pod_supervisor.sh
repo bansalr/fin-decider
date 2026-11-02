@@ -101,6 +101,11 @@ for pass in $(seq 1 50); do  # outer passes: anything that failed gets retried o
     [ -f $W/logs/$name.done ] && continue
     if [ "$name" = credit_agreements ] && [ -z "${HF_TOKEN:-}" ]; then log "skip $name (no HF_TOKEN)"; continue; fi
     remaining=$((remaining + 1))
+    if [ "$name" = bloomberg_full ] && [ ! -e corpus ]; then
+      # Use the Mac's prepared corpus (uploaded to $W/corpus, manifest last) so every shard shares one corpus hash.
+      for i in $(seq 1 90); do [ -f $W/corpus/manifest.json ] && break; [ $i = 1 ] && log "waiting for uploaded corpus"; sleep 20; done
+      [ -f $W/corpus/manifest.json ] && ln -sfn $W/corpus corpus && log "using uploaded corpus"
+    fi
     dir=$(python -c "import yaml;print(yaml.safe_load(open('$cfg'))['corpus']['directory'])")
     if [ ! -f "$dir/manifest.json" ]; then
       log "prepare $name"; classify prepare -c $cfg >> $W/logs/$name.log 2>&1 || { log "prepare $name failed"; continue; }
