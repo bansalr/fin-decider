@@ -7,6 +7,7 @@ set -uo pipefail
 cd "$(dirname "$0")/../.."
 set -a; . ./.env; set +a
 INTERVAL=${INTERVAL:-1800}
+MIN_BALANCE=${MIN_BALANCE:-6}  # below this, pull everything and STOP (not delete) all pods so volumes survive for a resume
 KEY=~/.ssh/fin_decider_runpod
 STATE=cloud/runpod/state
 R=/workspace/fin-decider
@@ -26,6 +27,16 @@ while true; do
     -d '{"query":"{ myself { clientBalance currentSpendPerHr } }"}' \
     | python3 -c "import json,sys;m=json.load(sys.stdin)['data']['myself'];print(f\"\${m['clientBalance']:.2f} left, \${m['currentSpendPerHr']:.2f}/h\")" 2>/dev/null || echo "balance unknown")
   echo "$(date) $balance"
+  bal=$(echo "$balance" | sed -nE 's/^\$([0-9.]+) left.*/\1/p')
+  if [ -n "$bal" ] && python3 -c "import sys;sys.exit(0 if float('$bal') < $MIN_BALANCE else 1)"; then
+    echo "$(date) balance below \$$MIN_BALANCE: final pull and stopping all pods"
+    while read -r name id ip port <&3; do
+      [ -f $STATE/finished_$name ] && continue
+      pull $name $ip $port
+      curl -s -X POST -H "Authorization: Bearer $RUNPOD_API_KEY" https://rest.runpod.io/v1/pods/$id/stop >/dev/null && echo "  stopped $name ($id)"
+    done 3< $STATE/pods
+    exit 0
+  fi
   alive=0
   while read -r name id ip port <&3; do
     [ -f $STATE/finished_$name ] && continue
