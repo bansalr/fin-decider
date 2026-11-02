@@ -52,5 +52,5 @@ echo "$NAME $id $ip $port" >> $STATE/pods
 SSH=(ssh -i $KEY -p $port -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 root@$ip)
 for i in $(seq 1 30); do "${SSH[@]}" true 2>/dev/null && break; sleep 10; done
 scp -i $KEY -P $port -o StrictHostKeyChecking=accept-new cloud/runpod/pod_supervisor.sh root@$ip:/workspace/
-"${SSH[@]}" "cd /workspace && nohup bash pod_supervisor.sh >> /workspace/supervisor.log 2>&1 &"
+"${SSH[@]}" -n "cd /workspace && (setsid nohup bash pod_supervisor.sh >> /workspace/supervisor.log 2>&1 < /dev/null &)"  # detach fully or ssh never returns
 echo "supervisor started on $ip:$port"

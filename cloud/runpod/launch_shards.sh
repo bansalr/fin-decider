@@ -11,7 +11,7 @@ for i in $(seq $FROM $TO); do
   NAME=s$i ONLY=bloomberg_full BLOOMBERG_SHARD=$i/$N cloud/runpod/launch.sh || { echo "launch s$i failed"; continue; }
   read -r _ id ip port <<< "$(grep "^s$i " cloud/runpod/state/pods)"
   ( e="ssh -i $KEY -p $port -o StrictHostKeyChecking=accept-new"
-    for t in 1 2 3; do rsync -a -e "$e" --exclude manifest.json corpus/ root@$ip:/workspace/corpus/ && \
-      rsync -a -e "$e" corpus/manifest.json root@$ip:/workspace/corpus/ && { echo "s$i corpus uploaded $(date -u)"; break; }; sleep 30; done ) &
+    for t in 1 2 3; do rsync -rt --no-o --no-g -e "$e" --exclude manifest.json corpus/ root@$ip:/workspace/corpus/ && \
+      rsync -rt --no-o --no-g -e "$e" corpus/manifest.json root@$ip:/workspace/corpus/ && { echo "s$i corpus uploaded $(date -u)"; break; }; sleep 30; done ) &
 done
 wait
