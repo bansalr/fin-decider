@@ -2,7 +2,7 @@
 
 **CLM, every dataset (one click):** open
 https://colab.research.google.com/github/bansalr/fin-decider/blob/isaac_cwb/colab/run_clm.ipynb
-then choose *Runtime → Run all*. It runs Reuters (v1, v2.1, v3.1), every G-SIB benchmark, FinCausal and the full Bloomberg corpus, in that order. Progress is saved to `MyDrive/fin-decider-clm/`; after any stop, *Run all* again resumes. Each finished dataset downloads as `clm_<dataset>.zip`. Expect several days of L4 time across sessions (Colab Pro plus extra compute units).
+then choose *Runtime → Run all*. It runs Reuters (v1, v2.1, v3.1), the G-SIB benchmarks except Twitter, CFPB and gold headlines, FinCausal and the full Bloomberg corpus, in that order. Progress is saved to `MyDrive/fin-decider-clm/`; after any stop, *Run all* again resumes. Each finished dataset downloads as `clm_<dataset>.zip`. Expect several days of L4 time across sessions (Colab Pro plus extra compute units).
 
 The sections below describe the earlier package-based route, kept for Strands.
 
