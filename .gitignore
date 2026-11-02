@@ -19,3 +19,4 @@ corpus_fincausal/
 corpus_bench/
 corpus_native/
 classification_results_native/
+cloud/runpod/state/
