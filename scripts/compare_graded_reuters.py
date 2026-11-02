@@ -34,6 +34,14 @@ def load_scores(run_dir: Path) -> dict[tuple[str, str], float]:
     return {(a, c.removeprefix("topic.")): s for a, c, s in df.select("article_id", "child_id", "score").iter_rows()}
 
 
+def load_any(spec: str) -> dict[tuple[str, str], float]:
+    """A run directory, or 'dirA+dirB' for the mean of two runs' scores (both question types in one request)."""
+    if "+" not in spec:
+        return load_scores(Path(spec))
+    parts = [load_scores(Path(p)) for p in spec.split("+")]
+    return {k: sum(p[k] for p in parts) / len(parts) for k in parts[0] if all(k in p for p in parts)}
+
+
 def rows(corpus: Path, first: int, skip_first: int) -> list[tuple[str, set[str]]]:
     """-> [(canonical article_id, gold topics)] per source row in the selected slice."""
     ids = pl.read_parquet(corpus / "canonical.parquet", columns=["article_id"]).sort("article_id")["article_id"]
@@ -112,14 +120,14 @@ def main() -> None:
     ap.add_argument("runs", nargs="+", help="name=run_dir; the first is the reference for matched recall")
     a = ap.parse_args()
 
-    runs = {n: load_scores(Path(d)) for n, d in (r.split("=", 1) for r in a.runs)}
+    runs = {n: load_any(d) for n, d in (r.split("=", 1) for r in a.runs)}
     rws = [r for r in rows(Path(a.corpus), a.first, a.skip_first)
            if all((r[0], t) in sc for sc in runs.values() for t in TOP10)]
     tuned = {}
     if a.tune:
         tc = Path(a.tune_corpus or a.corpus)
         for n, d in (r.split("=", 1) for r in a.tune):
-            sc = load_scores(Path(d))
+            sc = load_any(d)
             trw = [r for r in rows(tc, a.tune_first, 0) if all((r[0], t) in sc for t in TOP10)]
             tuned[n] = best_threshold(trw, sc)
     ref = next(iter(runs))
