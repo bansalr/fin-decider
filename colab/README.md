@@ -1,5 +1,11 @@
 # Running the self-hosted models in Google Colab
 
+**CLM, every dataset (one click):** open
+https://colab.research.google.com/github/bansalr/fin-decider/blob/isaac_cwb/colab/run_clm.ipynb
+then choose *Runtime → Run all*. It runs Reuters (v1, v2.1, v3.1), every G-SIB benchmark, FinCausal and the full Bloomberg corpus, in that order. Progress is saved to `MyDrive/fin-decider-clm/`; after any stop, *Run all* again resumes. Each finished dataset downloads as `clm_<dataset>.zip`. Expect several days of L4 time across sessions (Colab Pro plus extra compute units).
+
+The sections below describe the earlier package-based route, kept for Strands.
+
 Strands Decider and CLM are open-weight models with no hosted API, so they run on a Colab GPU. The whole pipeline runs inside the notebook: Colab only lends the GPU. Results are written to your Google Drive and copied back into the repo afterwards.
 
 **Strands also runs on the Mac (Apple silicon GPU), with no Colab needed.** It was verified there on 2026-11-01: about 0.5 stories a second, so roughly 1.3 hours for the Reuters test set. See "Strands on the Mac" below. CLM needs NVIDIA CUDA (vLLM), so it needs Colab or another NVIDIA GPU.
