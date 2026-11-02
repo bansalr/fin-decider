@@ -138,12 +138,17 @@ async def model_snapshot(cfg: Config, model: str) -> dict[str, Any]:
 async def _local_server_snapshot(m) -> dict[str, Any]:
     """Self-hosted server: pinned weight revisions, quantization, the server's own /health
     report, and the accelerator it runs on. Endpoint is operational and not hashed."""
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(f"{m.endpoint}/health")
-        r.raise_for_status()
-        health = r.json()
+    # Best-effort: CLM documents GET /health; Strands Decider does not.
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(f"{m.endpoint}/health")
+            r.raise_for_status()
+            health = r.json()
+        health = {k: v for k, v in health.items() if k not in ("status", "uptime_s", "requests")}
+    except (httpx.HTTPError, ValueError) as e:
+        health = {"unavailable": f"{type(e).__name__}: {str(e)[:120]}"}
     snap = {"id": m.model, "provider": m.provider, "revisions": m.revisions, "quantization": m.quantization,
-            "health": {k: v for k, v in health.items() if k not in ("status", "uptime_s", "requests")}}
+            "health": health}
     try:
         import torch
 

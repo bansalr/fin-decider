@@ -218,7 +218,7 @@ models:
     revisions:
       Contrastive-LM/CLM-v0.1-8B: e939398d4556fcd9400c76fa8c5a513202f42b0a
       Qwen/Qwen3-8B: b968826d9c46dd6066d109eabc6255188de91218
-    quantization: bnb8                  # 8-bit encoder to fit a 16 GB T4 (spec deviation)
+    quantization: none                  # bf16 encoder on a 24 GB L4 (colab/run_clm.ipynb); a T4 is too small
     expected_model_returned: clm-latest
     request_model: clm-latest
     provider_lock: []
