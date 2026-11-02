@@ -8,6 +8,9 @@
 #     GRACE_HOURS at most, then deletes itself. The account's prepaid credit is the last backstop.
 # Usage (started by cloud/runpod/launch.sh): nohup bash pod_supervisor.sh > /workspace/supervisor.log 2>&1 &
 set -uo pipefail
+# Processes started over ssh do not inherit the pod env (API key, pod id, limits, HF_TOKEN); RunPod writes it here.
+[ -f /etc/rp_environment ] && . /etc/rp_environment
+[ -f /workspace/override.env ] && . /workspace/override.env  # set from the Mac to change limits/shard on a running pod
 MAX_HOURS=${MAX_HOURS:-120}
 GRACE_HOURS=${GRACE_HOURS:-12}
 BRANCH=${BRANCH:-isaac_cwb}
@@ -52,7 +55,16 @@ start_servers() {
   for i in $(seq 1 60); do up http://127.0.0.1:8700/health && break; sleep 5; done
   up http://127.0.0.1:8700/health && log "servers up" || log "servers NOT up"
 }
-ensure_servers() { up http://127.0.0.1:8090/health && up http://127.0.0.1:8700/health || start_servers; }
+ensure_servers() {
+  up http://127.0.0.1:8090/health && up http://127.0.0.1:8700/health && return
+  if pgrep -f "vllm serve" >/dev/null; then  # still loading (e.g. after a supervisor restart): wait before restarting
+    for i in $(seq 1 180); do up http://127.0.0.1:8090/health && break; sleep 10; done
+    up http://127.0.0.1:8700/health || { pgrep -f clm-serve >/dev/null || nohup clm-serve >> $W/logs/clm_server.log 2>&1 & }
+    for i in $(seq 1 60); do up http://127.0.0.1:8700/health && break; sleep 5; done
+    up http://127.0.0.1:8090/health && up http://127.0.0.1:8700/health && { log "servers up"; return; }
+  fi
+  start_servers
+}
 
 # --- queue (name|config|extra flags) ----------------------------------------------------------------------
 G="--set models.clm.enabled=true --set models.clm.quantization=none --set models.clm.concurrency=32"
@@ -68,8 +80,13 @@ QUEUE=(
   "tradetheevent|configs/bench_tradetheevent.yaml|$G --no-dev-eval"
   "reuters_gsib|configs/bench_reuters.yaml|$G --no-dev-eval"
   "fincausal|configs/fincausal.yaml|$G --no-dev-eval"
-  "bloomberg_full|configs/classification.yaml|$G"
+  "bloomberg_full|configs/classification.yaml|$G${BLOOMBERG_SHARD:+ --shard $BLOOMBERG_SHARD}"
 )
+# ONLY=name[,name]: run just those queue entries (shard pods use ONLY=bloomberg_full BLOOMBERG_SHARD=i/N)
+if [ -n "${ONLY:-}" ]; then
+  keep=(); for item in "${QUEUE[@]}"; do [[ ",$ONLY," == *",${item%%|*},"* ]] && keep+=("$item"); done; QUEUE=("${keep[@]}")
+fi
+log "queue: ${QUEUE[*]%%|*} (shard ${BLOOMBERG_SHARD:-none}, max ${MAX_HOURS}h, grace ${GRACE_HOURS}h)"
 model_flag() {  # pin the server's reported model name, or record that it reports none
   name=$(curl -s -X POST http://127.0.0.1:8700/v1/systemone -H 'content-type: application/json' \
     -d '{"state":"Bank lends money.","questions":{"q1":{"type":"noul","instructions":"Is this about lending?"}}}' \
