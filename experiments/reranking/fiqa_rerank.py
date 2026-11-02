@@ -223,7 +223,7 @@ def run(arms: list[str], nq: int | None, conc: int) -> None:
 
 
 # ---- 3. scoring ------------------------------------------------------------------------------------------
-def score(nq: int | None) -> None:
+def score(nq: int | None, only: list[str] | None = None) -> None:
     _, _, qrels = load()
     rel = defaultdict(dict)
     for q, c, s in qrels.select("query-id", "corpus-id", "score").iter_rows():
@@ -237,7 +237,7 @@ def score(nq: int | None) -> None:
     costs = {}
     for arm in ["jev_yesno", "jev_graded"] + sorted(p.stem for p in CACHE.glob("jev_*@*.jsonl")) + ["cohere", "voyage"]:
         c = cached(arm)
-        if c:
+        if c and (not only or arm in only):
             arms[arm] = c
             costs[arm] = sum(r.get("cost", 0) for r in c.values())
 
@@ -298,12 +298,13 @@ def main() -> None:
     ap.add_argument("--queries", type=int, default=None, help="random sample of N test questions (fixed seed)")
     ap.add_argument("--concurrency", type=int, default=32)
     a = ap.parse_args()
+    a.arms_given = "--arms" in " ".join(__import__("sys").argv)
     if a.cmd == "candidates":
         candidates()
     elif a.cmd == "run":
         run(a.arms, a.queries, a.concurrency)
     else:
-        score(a.queries)
+        score(a.queries, a.arms if a.arms_given else None)
 
 
 if __name__ == "__main__":
