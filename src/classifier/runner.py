@@ -154,7 +154,9 @@ async def _local_server_snapshot(m) -> dict[str, Any]:
             r = await client.get(f"{m.endpoint}/health")
             r.raise_for_status()
             health = r.json()
-        health = {k: v for k, v in health.items() if k not in ("status", "uptime_s", "requests")}
+        # Drop live counters (uptime, request counts, CLM's vector-cache hits/usage): they change every call and would
+        # make every resume look like a different server.
+        health = {k: v for k, v in health.items() if k not in ("status", "uptime_s", "requests", "cache")}
     except (httpx.HTTPError, ValueError) as e:
         health = {"unavailable": f"{type(e).__name__}: {str(e)[:120]}"}
     snap = {"id": m.model, "provider": m.provider, "revisions": m.revisions, "quantization": m.quantization,
