@@ -10,6 +10,8 @@ Protocol (the usual BEIR rerank setup):
      paired bootstrap 95% CIs over questions.
 
 Rerankers (all through Vercel AI Gateway with VERCEL_API_KEY):
+  An arm may pin a Jev version with "@": jev_yesno@jev-1.14.0 calls typesafe-ai/jev-1.14.0 (the bare arm calls
+  the unversioned typesafe-ai/jev alias).
   jev_yesno   typesafe-ai/jev, one boolean question per (question, passage): "Does this passage answer ...?"
   jev_graded  typesafe-ai/jev, one 1-10 choice question per pair; score = probability-weighted mean level
               (turbopuffer's method)
@@ -154,12 +156,13 @@ async def run_arm(arm: str, qsel: list[str], cands: pl.DataFrame, text: dict, qt
             if key in have:
                 return
             q = qtext[qid]
-            if arm == "jev_yesno":
+            kind, _, version = arm.partition("@")
+            if kind == "jev_yesno":
                 question = {"type": "boolean", "instructions": f'Does this passage answer the question: "{q}"?'}
             else:
                 question = {"type": "choice", "criteria": LEVELS,
                             "instructions": f'How relevant is the passage to the question: "{q}"? Choose the level that fits best.'}
-            body = {"model": "typesafe-ai/jev", "state": text[cid], "questions": {"q1": question},
+            body = {"model": f"typesafe-ai/{version or 'jev'}", "state": text[cid], "questions": {"q1": question},
                     "providerOptions": {"gateway": {"only": ["typesafe-ai"]}}}
             async with sem:
                 d = await post(client, "/v1/evaluate", body)
@@ -168,7 +171,8 @@ async def run_arm(arm: str, qsel: list[str], cands: pl.DataFrame, text: dict, qt
                 rec["error"] = d["error"]
             else:
                 a = (d.get("answers") or {}).get("q1") or {}
-                if arm == "jev_yesno":
+                rec["model"] = d.get("model")
+                if kind == "jev_yesno":
                     rec["score"] = a.get("probability")
                 else:
                     probs = {int(k): float(v) for k, v in (a.get("probabilities") or {}).items()}
@@ -231,7 +235,7 @@ def score(nq: int | None) -> None:
     by_q = {k[0]: g.sort("rank")["corpus_id"].to_list() for k, g in cands.group_by("query_id")}
     arms = {"bm25": None}
     costs = {}
-    for arm in ("jev_yesno", "jev_graded", "cohere", "voyage"):
+    for arm in ["jev_yesno", "jev_graded"] + sorted(p.stem for p in CACHE.glob("jev_*@*.jsonl")) + ["cohere", "voyage"]:
         c = cached(arm)
         if c:
             arms[arm] = c
@@ -274,7 +278,9 @@ def score(nq: int | None) -> None:
               f"{'$%.2f' % costs[a] if a in costs else '-'} |")
     rng = random.Random(0)
     print("\npaired bootstrap of nDCG@10 differences (2,000 resamples of questions), 95% CI:")
-    pairs = [("jev_graded", "jev_yesno"), ("jev_graded", "cohere"), ("jev_graded", "voyage"), ("jev_yesno", "cohere"),
+    pairs = [("jev_yesno@jev-1.14.0", "jev_yesno"), ("jev_graded@jev-1.14.0", "jev_graded"),
+             ("jev_graded@jev-1.14.0", "jev_yesno@jev-1.14.0"), ("voyage", "jev_yesno@jev-1.14.0"),
+             ("jev_yesno@jev-1.14.0", "cohere"), ("jev_graded", "jev_yesno"), ("jev_graded", "cohere"), ("jev_graded", "voyage"), ("jev_yesno", "cohere"),
              ("jev_yesno", "voyage"), ("cohere", "voyage"), ("jev_yesno", "bm25")]
     for a, b in pairs:
         if a not in per or b not in per:
