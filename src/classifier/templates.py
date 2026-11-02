@@ -30,6 +30,9 @@ SECTIONS = {
     # One multi-option question per node: options are the children (key = child name,
     # description from [option]); [none] adds a "None of these" option below the root.
     "choice": ({"instructions", "option"}, {"none"}),
+    # One graded question per child: a choice over ordered relevance levels ("N: description"
+    # lines in [levels]); the adapter scores the child by the expected level, rescaled to 0..1.
+    "graded": ({"instructions", "levels"}, set()),
 }
 NONE_OPTION = "None of these"
 
@@ -118,6 +121,25 @@ class Template:
              "criteria": criteria}
         return q, keys
 
+    @property
+    def levels(self) -> dict[str, str]:
+        """Graded templates: {level number as string: description}, in ascending order."""
+        if self.kind != "graded":
+            raise TemplateError("levels are for graded templates")
+        out = {}
+        for line in self.sections["levels"].splitlines():
+            if line.strip():
+                n, _, desc = line.partition(":")
+                out[str(int(n.strip()))] = desc.strip()
+        return dict(sorted(out.items(), key=lambda kv: int(kv[0])))
+
+    def render_graded(self, parent: OntologyNode, child: OntologyNode) -> dict:
+        """Graded relevance question for one child: a choice over the template's levels."""
+        if self.kind != "graded":
+            raise TemplateError("render_graded() is for graded templates")
+        return {"type": "choice", "instructions": _fill(self.sections["instructions"], _values(parent, child)),
+                "criteria": dict(self.levels)}
+
     def render_label(self, child: OntologyNode) -> str:
         if self.kind != "label":
             raise TemplateError("render_label() is for label templates")
@@ -144,6 +166,13 @@ def load_template(path: str | Path, expected_sha256: str, kind: str = "boolean")
         raise TemplateError(f"template {path}: unknown sections {sorted(unknown)}")
     for s in optional:
         sections.setdefault(s, "")
+    if kind == "graded":
+        try:
+            levels = Template(kind, sections, digest).levels
+        except ValueError as e:
+            raise TemplateError(f"template {path}: [levels] lines must be 'N: description' ({e})") from e
+        if len(levels) < 2:
+            raise TemplateError(f"template {path}: [levels] needs at least two levels")
     bad = {f for body in sections.values() for f in _FIELD_RE.findall(body)} - set(_values(None, _DUMMY))
     if bad:
         raise TemplateError(f"template {path}: unknown placeholders {sorted(bad)}")

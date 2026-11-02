@@ -39,6 +39,16 @@ def question_keys(children: list[OntologyNode]) -> dict[str, str]:
 
 CHOICE = "__choice__"  # marker in `keys` for choice mode
 CHOICE_KEY = "q1"
+GRADED = "__graded__"  # marker in `keys` for graded mode: q1..qn -> child, one level choice each
+
+
+def expected_level(probs: dict[str, Any]) -> float:
+    """Graded answer -> expected level rescaled to 0..1 (lowest level 0, highest 1)."""
+    levels = {int(k): float(v) for k, v in probs.items()}
+    lo, hi, mass = min(levels), max(levels), sum(levels.values())
+    if mass <= 0 or hi == lo:
+        raise ValueError("no probability mass over levels")
+    return (sum(k * p for k, p in levels.items()) / mass - lo) / (hi - lo)
 
 
 def body_questions(body: dict[str, Any]) -> dict[str, dict]:
@@ -104,6 +114,9 @@ class HttpDecisionAdapter(ClassificationAdapter):
             return self.encode(article.text, {CHOICE_KEY: q}), {CHOICE: opt_keys}
         keys = question_keys(children)
         by_id = {c.id: c for c in children}
+        if ctx.template.kind == "graded":
+            questions = {k: ctx.template.render_graded(node, by_id[cid]) for k, cid in keys.items()}
+            return self.encode(article.text, questions), {GRADED: keys}
         questions = {k: ctx.template.render(node, by_id[cid]) for k, cid in keys.items()}
         return self.encode(article.text, questions), keys
 
@@ -171,7 +184,21 @@ class HttpDecisionAdapter(ClassificationAdapter):
         dec = self.decode(resp, data, attempt)
         if not self.cfg.allow_returned_model_mismatch:
             self.check_identity(dec)
-        if CHOICE in keys:
+        if GRADED in keys:
+            keys = keys[GRADED]
+            expected = {}
+            for k in keys:
+                ans = (dec.answers or {}).get(k) or {}
+                probs = ans.get("probabilities")
+                try:
+                    if not isinstance(probs, dict) or not probs:
+                        raise ValueError("missing probabilities")
+                    expected[k] = expected_level(probs)
+                except (ValueError, TypeError) as e:
+                    raise ProviderFailure("MODEL_ERROR", "graded_probabilities", f"{k}: {str(ans)[:200]} ({e})",
+                                          attempt) from e
+            dec.probabilities = expected
+        elif CHOICE in keys:
             ans = (dec.answers or {}).get(CHOICE_KEY) or {}
             probs = ans.get("probabilities")
             opts = keys[CHOICE]

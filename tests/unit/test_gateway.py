@@ -239,3 +239,67 @@ async def test_402_out_of_credit_is_fatal(cfg, template, monkeypatch):
     with pytest.raises(FatalProviderError, match="402"):
         await a.classify(ART, root, children, ClassificationContext("typesafe-ai/jev", template))
     assert sleeps == []
+
+
+async def test_graded_mode_request_and_expected_level(cfg, monkeypatch):
+    from classifier.adapters.http_decision import expected_level
+    from classifier.ontology import load_ontology
+    from classifier.provenance import sha256_file
+    from classifier.templates import load_template
+
+    monkeypatch.setenv("VERCEL_API_KEY", "k")
+    p = "templates/decision/graded_v1.txt"
+    tmpl = load_template(p, sha256_file(p), "graded")
+    assert list(tmpl.levels) == [str(i) for i in range(1, 11)]
+    onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
+    seen = {}
+
+    def handler(req):
+        b = json.loads(req.content)
+        seen["body"] = b
+        answers = {}
+        for i, k in enumerate(b["questions"]):
+            probs = {lvl: 0.0 for lvl in b["questions"][k]["criteria"]}
+            probs["10" if i == 0 else "1"] = 0.5
+            probs["8" if i == 0 else "3"] = 0.5
+            answers[k] = {"type": "choice", "probabilities": probs}
+        return httpx.Response(200, json={"model": "typesafe-ai/jev", "answers": answers,
+                                         "providerMetadata": {"gateway": {"routing": {"finalProvider": "typesafe-ai"}}}})
+
+    a = GatewayAdapter("jev", cfg.models["jev"], transport=httpx.MockTransport(handler))
+    root, kids = onto.node("relevance"), onto.children("relevance")
+    d = await a.classify(ART, root, kids, ClassificationContext("typesafe-ai/jev", tmpl))
+    q = seen["body"]["questions"]
+    assert list(q) == [f"q{i + 1}" for i in range(len(kids))]  # one graded question per child
+    assert all(v["type"] == "choice" and list(v["criteria"]) == list(tmpl.levels) for v in q.values())
+    assert kids[0].yes_no_question in q["q1"]["instructions"]
+    assert d.scores[kids[0].id] == pytest.approx((9 - 1) / 9)  # E = 9
+    assert d.scores[kids[1].id] == pytest.approx((2 - 1) / 9)  # E = 2
+    assert expected_level({"1": 1.0, "10": 0.0}) == 0.0 and expected_level({"1": 0.0, "10": 1.0}) == 1.0
+
+
+async def test_graded_missing_probabilities_is_model_error(cfg, monkeypatch):
+    from classifier.ontology import load_ontology
+    from classifier.provenance import sha256_file
+    from classifier.templates import load_template
+
+    monkeypatch.setenv("VERCEL_API_KEY", "k")
+    p = "templates/decision/graded_v1.txt"
+    tmpl = load_template(p, sha256_file(p), "graded")
+    onto = load_ontology(cfg.ontology.path, cfg.ontology.sha256)
+    body = {"model": "typesafe-ai/jev", "answers": {"q1": {"type": "choice", "probabilities": {"1": 0, "10": 0}}},
+            "providerMetadata": {"gateway": {"routing": {"finalProvider": "typesafe-ai"}}}}
+    a = GatewayAdapter("jev", cfg.models["jev"], transport=httpx.MockTransport(lambda r: httpx.Response(200, json=body)))
+    with pytest.raises(ProviderFailure) as e:
+        await a.classify(ART, onto.node("relevance"), onto.children("relevance"), ClassificationContext("x", tmpl))
+    assert e.value.status == "MODEL_ERROR"
+
+
+def test_graded_template_rejects_bad_levels(tmp_path):
+    from classifier.provenance import sha256_file
+    from classifier.templates import TemplateError, load_template
+
+    p = tmp_path / "bad.txt"
+    p.write_text("[instructions]\n{yes_no_question}\n[levels]\nlow: nothing\n")
+    with pytest.raises(TemplateError):
+        load_template(p, sha256_file(p), "graded")

@@ -124,7 +124,7 @@ class Hierarchy(Strict):
 
 
 class Template(Strict):
-    kind: Literal["boolean", "label", "choice"]
+    kind: Literal["boolean", "label", "choice", "graded"]
     path: str
     sha256: Sha256
 

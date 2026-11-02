@@ -1,0 +1,16 @@
+[instructions]
+Rate how well the article matches the question below, choosing the level that fits best.
+Question: {yes_no_question}
+Counts as a match: {criteria_true}
+Does not count: {criteria_false}
+[levels]
+1: Unrelated: nothing in the article bears on the question.
+2: Barely related: the article only shares a broad field with the question.
+3: Passing mention: the subject appears only in passing, in a sentence or a list.
+4: Background: the subject is context for a story that is about something else.
+5: Minor part: a secondary but real part of the article matches the question.
+6: Substantial part: a large part of the article matches, but it is not the main point.
+7: Likely match: the article's main point probably matches, with some doubt.
+8: Strong match: the article's main point matches the question.
+9: Very strong match: the article clearly and specifically matches the question.
+10: Perfect match: the article is unmistakably and entirely what the question asks about.
