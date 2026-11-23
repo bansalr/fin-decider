@@ -80,6 +80,21 @@ models:
     concurrency: 32
     allow_returned_model_mismatch: false
 
+  # Mo (Modaic) via Vercel AI Gateway: same request as Jev. Disabled by default; enable with --set models.mo.enabled=true
+  mo:
+    enabled: false
+    adapter: mo
+    provider: vercel_ai_gateway
+    endpoint: https://ai-gateway.vercel.sh
+    model: modaic/mo
+    provider_lock: [modaic]
+    api_key_env: VERCEL_API_KEY
+    template: reuters_top10_v3
+    timeout_seconds: 60
+    retries: 6
+    concurrency: 32
+    allow_returned_model_mismatch: false
+
   d1:
     enabled: true
     adapter: d1

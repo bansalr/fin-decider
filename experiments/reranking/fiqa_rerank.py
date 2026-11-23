@@ -15,6 +15,7 @@ Rerankers (all through Vercel AI Gateway with VERCEL_API_KEY):
   jev_yesno   typesafe-ai/jev, one boolean question per (question, passage): "Does this passage answer ...?"
   jev_graded  typesafe-ai/jev, one 1-10 choice question per pair; score = probability-weighted mean level
               (turbopuffer's method)
+  mo_yesno / mo_graded   the same two questions sent to modaic/mo (Modaic's Mo)
   cohere      cohere/rerank-v5-pro          voyage  voyage/rerank-3
 Every API response is cached under data/bench/fiqa/cache/<arm>.jsonl, so reruns resume and cost nothing.
 
@@ -157,13 +158,15 @@ async def run_arm(arm: str, qsel: list[str], cands: pl.DataFrame, text: dict, qt
                 return
             q = qtext[qid]
             kind, _, version = arm.partition("@")
-            if kind == "jev_yesno":
+            is_mo = kind.startswith("mo_")
+            if kind.endswith("_yesno"):
                 question = {"type": "boolean", "instructions": f'Does this passage answer the question: "{q}"?'}
             else:
                 question = {"type": "choice", "criteria": LEVELS,
                             "instructions": f'How relevant is the passage to the question: "{q}"? Choose the level that fits best.'}
-            body = {"model": f"typesafe-ai/{version or 'jev'}", "state": text[cid], "questions": {"q1": question},
-                    "providerOptions": {"gateway": {"only": ["typesafe-ai"]}}}
+            model = "modaic/mo" if is_mo else f"typesafe-ai/{version or 'jev'}"
+            body = {"model": model, "state": text[cid], "questions": {"q1": question},
+                    "providerOptions": {"gateway": {"only": ["modaic" if is_mo else "typesafe-ai"]}}}
             async with sem:
                 d = await post(client, "/v1/evaluate", body)
             rec = {"key": key, "cost": gw_cost(d)}
@@ -172,7 +175,7 @@ async def run_arm(arm: str, qsel: list[str], cands: pl.DataFrame, text: dict, qt
             else:
                 a = (d.get("answers") or {}).get("q1") or {}
                 rec["model"] = d.get("model")
-                if kind == "jev_yesno":
+                if kind.endswith("_yesno"):
                     rec["score"] = a.get("probability")
                 else:
                     probs = {int(k): float(v) for k, v in (a.get("probabilities") or {}).items()}
@@ -201,7 +204,7 @@ async def run_arm(arm: str, qsel: list[str], cands: pl.DataFrame, text: dict, qt
             out.write(json.dumps(rec) + "\n")
             done += 1
 
-        if arm.startswith("jev"):
+        if arm.startswith(("jev", "mo_")):
             await asyncio.gather(*(one_jev(q, c) for q in qsel for c in by_q[q]))
         else:
             await asyncio.gather(*(one_rerank(q) for q in qsel))
@@ -235,7 +238,7 @@ def score(nq: int | None, only: list[str] | None = None) -> None:
     by_q = {k[0]: g.sort("rank")["corpus_id"].to_list() for k, g in cands.group_by("query_id")}
     arms = {"bm25": None}
     costs = {}
-    for arm in ["jev_yesno", "jev_graded"] + sorted(p.stem for p in CACHE.glob("jev_*@*.jsonl")) + ["cohere", "voyage"]:
+    for arm in ["jev_yesno", "jev_graded"] + sorted(p.stem for p in CACHE.glob("jev_*@*.jsonl")) + ["mo_yesno", "mo_graded", "cohere", "voyage"]:
         c = cached(arm)
         if c and (not only or arm in only):
             arms[arm] = c
@@ -246,7 +249,7 @@ def score(nq: int | None, only: list[str] | None = None) -> None:
         if arm == "bm25":
             return docs
         c = arms[arm]
-        if arm.startswith("jev"):
+        if arm.startswith(("jev", "mo_")):
             s = {d: (c.get(f"{q}|{d}") or {}).get("score") for d in docs}
         else:
             s = (c.get(q) or {}).get("scores") or {}
@@ -278,7 +281,8 @@ def score(nq: int | None, only: list[str] | None = None) -> None:
               f"{'$%.2f' % costs[a] if a in costs else '-'} |")
     rng = random.Random(0)
     print("\npaired bootstrap of nDCG@10 differences (2,000 resamples of questions), 95% CI:")
-    pairs = [("jev_yesno@jev-1.14.0", "jev_yesno"), ("jev_graded@jev-1.14.0", "jev_graded"),
+    pairs = [("mo_yesno", "jev_yesno"), ("mo_graded", "jev_graded"), ("mo_graded", "mo_yesno"), ("voyage", "mo_yesno"),
+             ("mo_yesno", "cohere"), ("jev_yesno@jev-1.14.0", "jev_yesno"), ("jev_graded@jev-1.14.0", "jev_graded"),
              ("jev_graded@jev-1.14.0", "jev_yesno@jev-1.14.0"), ("voyage", "jev_yesno@jev-1.14.0"),
              ("jev_yesno@jev-1.14.0", "cohere"), ("jev_graded", "jev_yesno"), ("jev_graded", "cohere"), ("jev_graded", "voyage"), ("jev_yesno", "cohere"),
              ("jev_yesno", "voyage"), ("cohere", "voyage"), ("jev_yesno", "bm25")]

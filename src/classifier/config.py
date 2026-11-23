@@ -131,7 +131,7 @@ class Template(Strict):
 
 class ModelCfg(Strict):
     enabled: bool
-    adapter: Literal["jev", "laya", "d1", "clef", "systemone", "fake"]
+    adapter: Literal["jev", "mo", "laya", "d1", "clef", "systemone", "fake"]
     provider: Literal["vercel_ai_gateway", "cloudflare_workers_ai", "local_server", "local"]
     endpoint: str | None
     model: str

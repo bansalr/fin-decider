@@ -7,12 +7,15 @@ from .d1 import D1Adapter
 from .fake import FakeAdapter
 from .jev import JevAdapter
 from .laya import LayaAdapter
+from .mo import MoAdapter
 from .systemone import SystemOneAdapter
 
 
 def make_adapter(model_key: str, cfg: ModelCfg) -> ClassificationAdapter:
     if cfg.adapter == "jev":
         return JevAdapter(model_key, cfg)
+    if cfg.adapter == "mo":
+        return MoAdapter(model_key, cfg)
     if cfg.adapter == "laya":
         return LayaAdapter(model_key, cfg)
     if cfg.adapter == "clef":
